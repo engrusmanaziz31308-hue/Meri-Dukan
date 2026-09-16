@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meri Dukaan</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#123b38">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<style>
+  :root{
+    --ink:#16241f;
+    --paper:#faf7f0;
+    --card:#ffffff;
+    --teal:#1f5f5b;
+    --teal-dark:#123b38;
+    --gold:#c8912a;
+    --brick:#a8452f;
+    --line:#e3ddcf;
+    --muted:#6b6a5f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    padding-bottom:80px;
+  }
+  body.lang-ur{ font-family:'Noto Nastaliq Urdu', serif; line-height:2.1; }
+  body.lang-en{ font-family:'Noto Sans','Segoe UI',sans-serif; line-height:1.5; }
+
+  header{
+    background:var(--teal-dark);
+    color:#f4f1e6;
+    padding:16px 20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+  }
+  header h1{ margin:0; font-size:20px; font-weight:700; }
+  header p{ margin:4px 0 0; font-size:13px; color:#c9d6d1; }
+  .lang-switch{ display:flex; gap:6px; }
+  .lang-switch button{
+    background:rgba(255,255,255,0.12);
+    color:#f4f1e6;
+    border:1px solid rgba(255,255,255,0.3);
+    border-radius:6px;
+    padding:5px 10px;
+    font-size:12px;
+    font-family:'Noto Sans',sans-serif;
+  }
+  .lang-switch button.active{ background:#f4f1e6; color:var(--teal-dark); font-weight:700; }
+
+  main{ padding:16px; max-width:520px; margin:0 auto; }
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+
+  .stat-row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+  .stat-card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  .stat-card .label{ font-size:12px; color:var(--muted); margin-bottom:4px; }
+  .stat-card .value{ font-size:21px; font-weight:700; }
+  .stat-card.profit .value{ color:var(--teal); }
+  .stat-card.udhaar .value{ color:var(--brick); }
+
+  .section-title{ font-size:14px; font-weight:700; color:var(--muted); margin:18px 0 8px; }
+
+  .card-list{ display:flex; flex-direction:column; gap:8px; }
+  .item-row{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .item-row .name{ font-weight:700; font-size:14px; }
+  .item-row .sub{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .item-row .right{ text-align:end; }
+  .low-stock{ color:var(--brick); font-weight:700; }
+  .item-actions{ display:flex; gap:6px; }
+
+  .empty{ text-align:center; padding:28px 10px; color:var(--muted); font-size:14px; }
+
+  input, select{ width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-size:14px; background:#fff; margin-bottom:10px; font-family:inherit; }
+  label{ font-size:12px; color:var(--muted); display:block; margin-bottom:4px; }
+  .field{ margin-bottom:12px; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .row3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+
+  button{ font-size:14px; font-weight:700; border-radius:8px; border:none; padding:12px; cursor:pointer; font-family:inherit; }
+  .btn-primary{ background:var(--teal); color:#fff; width:100%; }
+  .btn-secondary{ background:#fff; border:1px solid var(--line); color:var(--ink); width:100%; }
+  .btn-danger{ background:var(--brick); color:#fff; }
+  .btn-gold{ background:var(--gold); color:#fff; }
+  .btn-small{ padding:8px 10px; font-size:12px; width:auto; }
+  .btn-row{ display:flex; gap:8px; margin-top:8px; }
+  .btn-row button{ flex:1; }
+
+  .invoice-item-row{ display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-bottom:8px; flex-wrap:wrap; }
+  .invoice-item-row input{ margin-bottom:0; flex:1; min-width:70px; }
+  .invoice-item-row .unit-tag{ font-size:12px; color:var(--muted); min-width:36px; }
+  .combo-wrap{ position:relative; flex:2; min-width:140px; }
+  .combo-wrap input{ width:100%; }
+  .combo-wrap .sugg-box{ display:none; position:absolute; top:100%; inset-inline-start:0; width:100%; background:#fff; border:1px solid var(--line); border-radius:8px; max-height:180px; overflow-y:auto; z-index:20; box-shadow:0 4px 10px rgba(0,0,0,0.08); }
+  .combo-wrap .sugg-item{ padding:9px 10px; font-size:13px; cursor:pointer; border-bottom:1px solid var(--line); }
+  .combo-wrap .sugg-item:last-child{ border-bottom:none; }
+  .combo-wrap .sugg-item:hover, .combo-wrap .sugg-item.active{ background:#e9f2f0; }
+  .combo-wrap .sugg-empty{ padding:9px 10px; font-size:12px; color:var(--muted); }
+
+  .total-box{ background:var(--teal-dark); color:#fff; border-radius:10px; padding:16px; margin:16px 0; }
+  .total-box .amount{ font-size:26px; font-weight:700; }
+  .total-box .label{ font-size:12px; color:#c9d6d1; }
+
+  .toggle-group{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .toggle-btn{ flex:1; min-width:90px; padding:10px; border:1px solid var(--line); background:#fff; border-radius:8px; font-size:13px; font-weight:700; color:var(--muted); }
+  .toggle-btn.selected{ border-color:var(--teal); background:#e9f2f0; color:var(--teal-dark); }
+
+  nav{ position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--line); display:flex; padding:6px 0; }
+  nav button{ flex:1; background:none; border:none; font-size:10.5px; color:var(--muted); padding:8px 0 4px; display:flex; flex-direction:column; align-items:center; gap:2px; font-weight:600; }
+  nav button.active{ color:var(--teal); font-weight:700; }
+  nav .icon{ font-size:17px; }
+
+  .modal-bg{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); align-items:flex-end; justify-content:center; z-index:50; }
+  .modal-bg.show{ display:flex; }
+  .modal{ background:#fff; width:100%; max-width:520px; border-radius:16px 16px 0 0; padding:20px; max-height:88vh; overflow-y:auto; }
+  .modal h3{ margin:0 0 14px; font-size:16px; }
+  .close-row{ margin-bottom:8px; }
+  .close-row span{ font-size:13px; color:var(--muted); cursor:pointer; }
+
+  #print-area{ display:none; }
+  @media print{
+    body *{ visibility:hidden; }
+    #print-area, #print-area *{ visibility:visible; }
+    #print-area{ display:block; position:absolute; top:0; left:0; width:100%; padding:20px; }
+  }
+  .pr-header{ text-align:center; margin-bottom:14px; color:#000; font-weight:700; }
+  .pr-header h2{ margin:0; font-size:18px; color:#000; font-weight:700; }
+  .pr-header div{ color:#000; font-weight:700; }
+  .pr-logo{ display:block; margin:0 auto 8px; max-width:90px; max-height:90px; object-fit:contain; }
+  .pr-desc{ font-size:12px; color:#000; font-weight:700; margin-top:2px; }
+  .pr-proprietor{ font-size:12.5px; color:#000; font-weight:700; margin-top:2px; }
+  .pr-tagline{ font-weight:700; font-size:12.5px; color:#000; margin-top:2px; }
+  .pr-qr-wrap{ text-align:center; margin-top:16px; }
+  .pr-qr-wrap img{ width:120px; height:120px; }
+  .pr-qr-caption{ font-size:11.5px; margin-top:6px; color:#333; }
+  .pr-table{ width:100%; border-collapse:collapse; margin:14px 0; font-size:13px; }
+  .pr-table th, .pr-table td{ border-bottom:2px solid #000; padding:6px 4px; text-align:start; }
+  .pr-total-line{ display:flex; justify-content:space-between; font-size:14px; padding:4px 0; }
+  .pr-total-line.grand{ font-weight:700; font-size:16px; border-top:2.5px solid #000; margin-top:6px; padding-top:8px; }
+</style>
+</head>
+<body class="lang-ur">
+
+<header>
+  <div>
+    <h1 data-i18n="app_title">میری دکان</h1>
+    <p id="today-date"></p>
+  </div>
+  <div class="lang-switch">
+    <button id="lang-ur-btn" class="active" onclick="setLang('ur')">اردو</button>
+    <button id="lang-en-btn" onclick="setLang('en')">English</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- DASHBOARD -->
+  <div class="screen active" id="screen-dashboard">
+    <div class="stat-row">
+      <div class="stat-card profit"><div class="label" data-i18n="dash_today_profit">آج کا نفع</div><div class="value" id="today-profit">Rs 0</div></div>
+      <div class="stat-card"><div class="label" data-i18n="dash_today_sales">آج کی فروخت</div><div class="value" id="today-sales">Rs 0</div></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card"><div class="label" data-i18n="dash_today_expense">آج کا خرچہ</div><div class="value" id="today-expense">Rs 0</div></div>
+      <div class="stat-card profit"><div class="label" data-i18n="dash_net_profit">خالص نفع (آج)</div><div class="value" id="today-net-profit">Rs 0</div></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card udhaar"><div class="label" data-i18n="dash_total_udhaar">کل ادھار (باقی)</div><div class="value" id="total-udhaar">Rs 0</div></div>
+      <div class="stat-card"><div class="label" data-i18n="dash_low_stock_count">کم اسٹاک آئٹمز</div><div class="value" id="low-stock-count">0</div></div>
+    </div>
+
+    <div class="section-title" data-i18n="dash_week_title">اس ہفتے کا حساب</div>
+    <div class="stat-row">
+      <div class="stat-card"><div class="label" data-i18n="dash_week_sales">ہفتے کی فروخت</div><div class="value" id="week-sales">Rs 0</div></div>
+      <div class="stat-card profit"><div class="label" data-i18n="dash_week_profit">ہفتے کا نفع</div><div class="value" id="week-profit">Rs 0</div></div>
+    </div>
+
+    <div class="section-title" data-i18n="dash_low_stock_title">کم اسٹاک الرٹ</div>
+    <div class="card-list" id="low-stock-list"></div>
+  </div>
+
+  <!-- INVENTORY -->
+  <div class="screen" id="screen-inventory">
+    <button class="btn-primary" onclick="openProductModal()"><span data-i18n="inv_add_btn">+ نیا پروڈکٹ شامل کریں</span></button>
+    <div class="section-title" data-i18n="inv_stock_title">آپ کا اسٹاک</div>
+    <div class="card-list" id="inventory-list"></div>
+  </div>
+
+  <!-- INVOICE -->
+  <div class="screen" id="screen-invoice">
+    <div class="empty" id="edit-invoice-notice" style="display:none; background:#fdf3e3; border:1px solid var(--gold); border-radius:8px; padding:10px; color:var(--teal-dark); font-size:13px; margin-bottom:12px;" data-i18n="inv_editing_notice">آپ ایک موجودہ انوائس میں ترمیم کر رہے ہیں</div>
+
+    <div class="section-title" data-i18n="inv_customer_title">گاہک (اختیاری)</div>
+    <div class="field">
+      <input id="inv-customer-name" data-i18n-ph="inv_customer_name_ph" placeholder="گاہک کا نام">
+      <input id="inv-customer-phone" data-i18n-ph="inv_customer_phone_ph" placeholder="فون نمبر (اختیاری)">
+    </div>
+
+    <div class="field">
+      <label data-i18n="inv_datetime_label">تاریخ اور وقت</label>
+      <input id="inv-datetime" type="datetime-local">
+    </div>
+
+    <div class="section-title" data-i18n="inv_items_title">آئٹمز</div>
+    <div style="font-size:12px; color:var(--muted); margin-bottom:8px;" data-i18n="inv_search_hint">ٹائپ کر کے سرچ کریں یا لسٹ سے چنیں</div>
+    <div id="invoice-items"></div>
+    <button class="btn-secondary" onclick="addInvoiceItemRow()"><span data-i18n="inv_add_item_btn">+ آئٹم شامل کریں</span></button>
+
+    <div class="total-box">
+      <div class="label" data-i18n="inv_total_label">کل بل</div>
+      <div class="amount" id="invoice-total">Rs 0</div>
+    </div>
+
+    <div class="section-title" data-i18n="inv_payment_title">ادائیگی</div>
+    <div class="toggle-group">
+      <button class="toggle-btn selected" id="pay-full" onclick="setPayMode('full')" data-i18n="pay_full">پورا مل گیا</button>
+      <button class="toggle-btn" id="pay-udhaar" onclick="setPayMode('udhaar')" data-i18n="pay_udhaar">ادھار</button>
+      <button class="toggle-btn" id="pay-partial" onclick="setPayMode('partial')" data-i18n="pay_partial">کچھ ملا</button>
+    </div>
+    <div class="field" id="partial-field" style="display:none;">
+      <label data-i18n="partial_label">کتنا پیسہ ابھی ملا</label>
+      <input id="partial-amount" type="number" placeholder="0">
+    </div>
+
+    <button class="btn-primary" onclick="saveInvoice()"><span id="inv-save-btn-label">انوائس بنائیں</span></button>
+    <button class="btn-secondary" id="cancel-edit-btn" style="display:none;" onclick="cancelEditInvoice()"><span data-i18n="inv_cancel_edit_btn">ترمیم منسوخ کریں</span></button>
+
+    <div class="section-title" data-i18n="inv_history_title">حالیہ انوائسز</div>
+    <div class="card-list" id="invoice-history-list"></div>
+  </div>
+
+  <!-- UDHAAR -->
+  <div class="screen" id="screen-udhaar">
+    <div class="section-title" data-i18n="udhaar_title">گاہک جن کا ادھار باقی ہے</div>
+    <div class="card-list" id="udhaar-list"></div>
+  </div>
+
+  <!-- MORE / REPORTS -->
+  <div class="screen" id="screen-more">
+    <div class="section-title" data-i18n="shop_info_title">دکان کی معلومات (انوائس پر آئے گی)</div>
+    <div class="field">
+      <label data-i18n="shop_logo_label">دکان کا لوگو (اختیاری)</label>
+      <input type="file" id="shop-logo-input" accept="image/*" onchange="onShopLogoSelected(event)">
+      <div id="shop-logo-preview-wrap" style="display:none; margin-top:8px; text-align:center;">
+        <img id="shop-logo-preview" style="max-width:90px; max-height:90px; border:1px solid var(--line); border-radius:8px; padding:4px; background:#fff;">
+        <div style="margin-top:6px;"><button type="button" class="btn-secondary btn-small" onclick="removeShopLogo()"><span data-i18n="shop_logo_remove">لوگو ہٹائیں</span></button></div>
+      </div>
+    </div>
+    <div class="field">
+      <label data-i18n="shop_name_label">دکان کا نام</label>
+      <input id="shop-name" data-i18n-ph="shop_name_ph" placeholder="جیسے: الرحمن جنرل اسٹور">
+    </div>
+    <div class="field">
+      <label data-i18n="shop_description_label">کاروبار کی تفصیل (دکان کے نام کے نیچے آئے گی)</label>
+      <input id="shop-description" data-i18n-ph="shop_description_ph" placeholder="جیسے: ہول سیل و ریٹیل جنرل اسٹور">
+    </div>
+    <div class="field">
+      <label data-i18n="shop_proprietor_label">پروپرائٹر / مالک کا نام</label>
+      <input id="shop-proprietor" data-i18n-ph="shop_proprietor_ph" placeholder="جیسے: محمد اسلم">
+    </div>
+    <div class="field">
+      <label data-i18n="shop_phone_label">رابطہ نمبر</label>
+      <input id="shop-phone" data-i18n-ph="shop_phone_ph" placeholder="جیسے: 03001234567">
+    </div>
+    <div class="field">
+      <label data-i18n="shop_address_label">دکان کا پتہ</label>
+      <input id="shop-address" data-i18n-ph="shop_address_ph" placeholder="جیسے: مین بازار، لاہور">
+    </div>
+    <div class="field">
+      <label data-i18n="shop_payment_label">اکاؤنٹ نمبر / راست آئی ڈی (QR کوڈ کے لیے)</label>
+      <input id="shop-payment-id" data-i18n-ph="shop_payment_ph" placeholder="جیسے: 03001234567 یا اکاؤنٹ نمبر">
+    </div>
+    <button class="btn-primary" onclick="saveShopInfo()"><span data-i18n="shop_save_btn">دکان کی معلومات محفوظ کریں</span></button>
+
+    <div class="section-title" data-i18n="more_expense_title">خرچہ درج کریں</div>
+    <div class="field">
+      <input id="exp-category" data-i18n-ph="expense_category_ph" placeholder="خرچے کی قسم (جیسے: کرایہ، بجلی)">
+      <input id="exp-amount" type="number" data-i18n-ph="expense_amount_label" placeholder="رقم">
+    </div>
+    <button class="btn-secondary" onclick="addExpense()"><span data-i18n="expense_add_btn">خرچہ محفوظ کریں</span></button>
+
+    <div class="section-title" data-i18n="more_report_title">رپورٹ بنائیں (PDF)</div>
+    <div class="toggle-group">
+      <button class="toggle-btn selected" id="range-daily" onclick="setReportRange('daily')" data-i18n="report_range_daily">آج</button>
+      <button class="toggle-btn" id="range-weekly" onclick="setReportRange('weekly')" data-i18n="report_range_weekly">ہفتہ</button>
+      <button class="toggle-btn" id="range-monthly" onclick="setReportRange('monthly')" data-i18n="report_range_monthly">مہینہ</button>
+      <button class="toggle-btn" id="range-custom" onclick="setReportRange('custom')" data-i18n="report_range_custom">مخصوص تاریخ</button>
+    </div>
+    <div class="row2" id="custom-range-fields" style="display:none;">
+      <div class="field"><label data-i18n="report_from_label">تاریخ سے</label><input id="report-from" type="date"></div>
+      <div class="field"><label data-i18n="report_to_label">تاریخ تک</label><input id="report-to" type="date"></div>
+    </div>
+    <button class="btn-gold" onclick="generateReport()"><span data-i18n="report_generate_btn">PDF رپورٹ ڈاؤن لوڈ کریں</span></button>
+
+    <div class="section-title" data-i18n="more_backup_title">ڈیٹا بیک اپ</div>
+    <div class="empty" id="backup-folder-status" style="text-align:start; background:#fdf3e3; border:1px solid var(--gold); border-radius:8px; padding:10px; font-size:12.5px; color:var(--teal-dark); margin-bottom:10px;"></div>
+    <button class="btn-secondary" onclick="chooseBackupFolder()"><span data-i18n="backup_choose_folder_btn">بیک اپ فولڈر منتخب کریں (خودکار بیک اپ)</span></button>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="exportBackup()"><span data-i18n="backup_export_btn">بیک اپ محفوظ کریں (ڈاؤن لوڈ)</span></button>
+      <button class="btn-secondary" onclick="document.getElementById('restore-file').click()"><span data-i18n="backup_import_btn">بیک اپ واپس لائیں</span></button>
+    </div>
+    <input type="file" id="restore-file" accept="application/json" style="display:none;" onchange="importBackup(event)">
+  </div>
+
+</main>
+
+<nav>
+  <button class="active" data-screen="dashboard" onclick="showScreen('dashboard')"><span class="icon">&#128202;</span><span data-i18n="nav_dashboard">ڈیش بورڈ</span></button>
+  <button data-screen="inventory" onclick="showScreen('inventory')"><span class="icon">&#128230;</span><span data-i18n="nav_stock">اسٹاک</span></button>
+  <button data-screen="invoice" onclick="showScreen('invoice')"><span class="icon">&#129534;</span><span data-i18n="nav_invoice">انوائس</span></button>
+  <button data-screen="udhaar" onclick="showScreen('udhaar')"><span class="icon">&#128179;</span><span data-i18n="nav_udhaar">ادھار</span></button>
+  <button data-screen="more" onclick="showScreen('more')"><span class="icon">&#9881;</span><span data-i18n="nav_more">مزید</span></button>
+</nav>
+
+<!-- Add/edit product modal -->
+<div class="modal-bg" id="product-modal">
+  <div class="modal">
+    <div class="close-row"><span onclick="closeProductModal()">&#10005; <span data-i18n="close_label">بند کریں</span></span></div>
+    <h3 id="product-modal-title" data-i18n="p_modal_title">نیا پروڈکٹ شامل کریں</h3>
+    <input type="hidden" id="p-id">
+    <div class="field">
+      <label data-i18n="p_name_label">پروڈکٹ کا نام</label>
+      <input id="p-name" data-i18n-ph="p_name_ph" placeholder="جیسے: لیز چپس">
+    </div>
+    <div class="field">
+      <label data-i18n="p_unit_label">یونٹ</label>
+      <select id="p-unit">
+        <option value="piece" data-i18n="unit_piece">عدد (Piece)</option>
+        <option value="packet" data-i18n="unit_packet">پیکٹ (Packet)</option>
+        <option value="dozen" data-i18n="unit_dozen">درجن (Dozen)</option>
+        <option value="kg" data-i18n="unit_kg">کلوگرام (Kg)</option>
+        <option value="gram" data-i18n="unit_gram">گرام (Gram)</option>
+        <option value="litre" data-i18n="unit_litre">لیٹر (Litre)</option>
+        <option value="box" data-i18n="unit_box">ڈبہ (Box)</option>
+        <option value="bag" data-i18n="unit_bag">بوری/بیگ (Bag)</option>
+      </select>
+    </div>
+    <div class="row2">
+      <div class="field"><label data-i18n="p_cost_label">خریداری قیمت (فی یونٹ)</label><input id="p-cost" type="number" placeholder="0"></div>
+      <div class="field"><label data-i18n="p_price_label">فروخت قیمت (فی یونٹ)</label><input id="p-price" type="number" placeholder="0"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label data-i18n="p_qty_label">کتنی مقدار ہے</label><input id="p-qty" type="number" placeholder="0"></div>
+      <div class="field"><label data-i18n="p_lowalert_label">کم اسٹاک الرٹ کب دے</label><input id="p-lowalert" type="number" placeholder="5"></div>
+    </div>
+    <button class="btn-primary" onclick="saveProduct()"><span data-i18n="p_save_btn">محفوظ کریں</span></button>
+  </div>
+</div>
+
+<!-- Udhaar detail modal -->
+<div class="modal-bg" id="udhaar-modal">
+  <div class="modal">
+    <div class="close-row"><span onclick="closeUdhaarModal()">&#10005; <span data-i18n="close_label">بند کریں</span></span></div>
+    <h3 id="udhaar-modal-name"></h3>
+    <div class="card-list" id="udhaar-modal-history"></div>
+    <div class="field" style="margin-top:14px;">
+      <label data-i18n="udhaar_payment_label">واپس ملی ادائیگی (Rs)</label>
+      <input id="udhaar-payment-amount" type="number" placeholder="0">
+    </div>
+    <button class="btn-primary" onclick="recordUdhaarPayment()"><span data-i18n="udhaar_payment_btn">ادائیگی درج کریں</span></button>
+  </div>
+</div>
+
+<!-- Invoice receipt / print modal -->
+<div class="modal-bg" id="receipt-modal">
+  <div class="modal">
+    <div class="close-row"><span onclick="closeReceiptModal()">&#10005; <span data-i18n="close_label">بند کریں</span></span></div>
+    <h3 data-i18n="inv_save_btn">انوائس بن گئی</h3>
+    <div class="card-list" id="receipt-summary"></div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="printCurrentInvoice()"><span data-i18n="print_btn">پرنٹ کریں</span></button>
+      <button class="btn-secondary" onclick="shareWhatsApp()"><span data-i18n="whatsapp_btn">واٹس ایپ پر بھیجیں</span></button>
+    </div>
+  </div>
+</div>
+
+<div id="print-area"></div>
+
+<script>
+let db = { products: [], invoices: [], customers: [], expenses: [], settings: { lang: 'ur', shopName:'', businessDescription:'', proprietorName:'', logoDataUrl:'', shopPhone:'', shopAddress:'', paymentId:'' } };
+let currentUdhaarCustomerId = null;
+let payMode = 'full';
+let reportRange = 'daily';
+let lastInvoiceId = null;
+let editingInvoiceId = null;
+
+const UNIT_LABELS = {
+  piece: { ur:'عدد', en:'pcs' },
+  packet: { ur:'پیکٹ', en:'packet' },
+  dozen: { ur:'درجن', en:'dozen' },
+  kg: { ur:'کلوگرام', en:'kg' },
+  gram: { ur:'گرام', en:'g' },
+  litre: { ur:'لیٹر', en:'L' },
+  box: { ur:'ڈبہ', en:'box' },
+  bag: { ur:'بوری/بیگ', en:'bag' }
+};
+
+const T = {
+  app_title: { ur:'میری دکان', en:'My Shop' },
+  nav_dashboard: { ur:'ڈیش بورڈ', en:'Dashboard' },
+  nav_stock: { ur:'اسٹاک', en:'Stock' },
+  nav_invoice: { ur:'انوائس', en:'Invoice' },
+  nav_udhaar: { ur:'ادھار', en:'Udhaar' },
+  nav_more: { ur:'مزید', en:'More' },
+  close_label: { ur:'بند کریں', en:'Close' },
+
+  shop_info_title: { ur:'دکان کی معلومات (انوائس پر آئے گی)', en:'Shop information (appears on invoice)' },
+  shop_logo_label: { ur:'دکان کا لوگو (اختیاری)', en:'Shop logo (optional)' },
+  shop_logo_remove: { ur:'لوگو ہٹائیں', en:'Remove logo' },
+  shop_logo_too_large: { ur:'لوگو کی فائل بہت بڑی ہے، براہ کرم 500KB سے چھوٹی تصویر منتخب کریں', en:'Logo file is too large, please choose an image under 500KB' },
+  shop_name_label: { ur:'دکان کا نام', en:'Shop name' },
+  shop_name_ph: { ur:'جیسے: الرحمن جنرل اسٹور', en:'e.g. Al-Rehman General Store' },
+  shop_description_label: { ur:'کاروبار کی تفصیل (دکان کے نام کے نیچے آئے گی)', en:'Business description (shows below shop name)' },
+  shop_description_ph: { ur:'جیسے: ہول سیل و ریٹیل جنرل اسٹور', en:'e.g. Wholesale & Retail General Store' },
+  shop_proprietor_label: { ur:'پروپرائٹر / مالک کا نام', en:'Proprietor / Owner name' },
+  shop_proprietor_ph: { ur:'جیسے: محمد اسلم', en:'e.g. Muhammad Aslam' },
+  shop_phone_label: { ur:'رابطہ نمبر', en:'Contact number' },
+  shop_phone_ph: { ur:'جیسے: 03001234567', en:'e.g. 03001234567' },
+  shop_address_label: { ur:'دکان کا پتہ', en:'Shop address' },
+  shop_address_ph: { ur:'جیسے: مین بازار، لاہور', en:'e.g. Main Bazaar, Lahore' },
+  shop_payment_label: { ur:'اکاؤنٹ نمبر / راست آئی ڈی (QR کوڈ کے لیے)', en:'Account number / Raast ID (for QR code)' },
+  shop_payment_ph: { ur:'جیسے: 03001234567 یا اکاؤنٹ نمبر', en:'e.g. 03001234567 or account number' },
+  shop_save_btn: { ur:'دکان کی معلومات محفوظ کریں', en:'Save shop information' },
+  shop_info_saved: { ur:'دکان کی معلومات محفوظ ہو گئیں', en:'Shop information saved' },
+  print_tagline: { ur:'معیار ہماری پہچان ہے', en:'Quality is Our Identity' },
+  print_scan_pay: { ur:'ادائیگی کے لیے یہ QR کوڈ سکین کریں', en:'Scan this QR code to pay' },
+  print_proprietor_label: { ur:'پروپرائٹر', en:'Proprietor' },
+
+  inv_datetime_label: { ur:'تاریخ اور وقت', en:'Date & time' },
+  inv_editing_notice: { ur:'آپ ایک موجودہ انوائس میں ترمیم کر رہے ہیں', en:'You are editing an existing invoice' },
+  inv_cancel_edit_btn: { ur:'ترمیم منسوخ کریں', en:'Cancel edit' },
+  inv_update_btn: { ur:'انوائس اپڈیٹ کریں', en:'Update invoice' },
+  inv_updated_msg: { ur:'انوائس اپڈیٹ ہو گئی', en:'Invoice updated' },
+  edit_btn: { ur:'ترمیم', en:'Edit' },
+
+  dash_today_profit: { ur:'آج کا نفع', en:"Today's profit" },
+  dash_today_sales: { ur:'آج کی فروخت', en:"Today's sales" },
+  dash_today_expense: { ur:'آج کا خرچہ', en:"Today's expense" },
+  dash_net_profit: { ur:'خالص نفع (آج)', en:'Net profit (today)' },
+  dash_total_udhaar: { ur:'کل ادھار (باقی)', en:'Total udhaar due' },
+  dash_low_stock_count: { ur:'کم اسٹاک آئٹمز', en:'Low stock items' },
+  dash_week_title: { ur:'اس ہفتے کا حساب', en:"This week's summary" },
+  dash_week_sales: { ur:'ہفتے کی فروخت', en:'Weekly sales' },
+  dash_week_profit: { ur:'ہفتے کا نفع', en:'Weekly profit' },
+  dash_low_stock_title: { ur:'کم اسٹاک الرٹ', en:'Low stock alert' },
+  dash_low_stock_empty: { ur:'سب اسٹاک ٹھیک ہے', en:'All stock levels are fine' },
+  low_stock_left: { ur:'صرف {n} {u} بچا ہے', en:'Only {n} {u} left' },
+
+  inv_add_btn: { ur:'+ نیا پروڈکٹ شامل کریں', en:'+ Add new product' },
+  inv_stock_title: { ur:'آپ کا اسٹاک', en:'Your stock' },
+  inv_empty: { ur:'ابھی کوئی پروڈکٹ شامل نہیں ہوا۔ اوپر بٹن دبائیں۔', en:'No products yet. Tap the button above.' },
+
+  p_modal_title: { ur:'نیا پروڈکٹ شامل کریں', en:'Add new product' },
+  p_edit_title: { ur:'پروڈکٹ میں تبدیلی کریں', en:'Edit product' },
+  p_name_label: { ur:'پروڈکٹ کا نام', en:'Product name' },
+  p_name_ph: { ur:'جیسے: لیز چپس', en:'e.g. Lays chips' },
+  p_unit_label: { ur:'یونٹ', en:'Unit' },
+  p_cost_label: { ur:'خریداری قیمت (فی یونٹ)', en:'Cost price (per unit)' },
+  p_price_label: { ur:'فروخت قیمت (فی یونٹ)', en:'Sale price (per unit)' },
+  p_qty_label: { ur:'کتنی مقدار ہے', en:'Quantity in stock' },
+  p_lowalert_label: { ur:'کم اسٹاک الرٹ کب دے', en:'Low stock alert level' },
+  p_save_btn: { ur:'محفوظ کریں', en:'Save' },
+  p_edit_btn: { ur:'تبدیل کریں', en:'Edit' },
+  p_delete_btn: { ur:'حذف کریں', en:'Delete' },
+  p_delete_confirm: { ur:'یہ پروڈکٹ حذف کر دیں؟', en:'Delete this product?' },
+  p_name_required: { ur:'پروڈکٹ کا نام لکھیں', en:'Enter a product name' },
+  unit_piece: { ur:'عدد (Piece)', en:'Piece' },
+  unit_packet: { ur:'پیکٹ (Packet)', en:'Packet' },
+  unit_dozen: { ur:'درجن (Dozen)', en:'Dozen' },
+  unit_kg: { ur:'کلوگرام (Kg)', en:'Kilogram (Kg)' },
+  unit_gram: { ur:'گرام (Gram)', en:'Gram' },
+  unit_litre: { ur:'لیٹر (Litre)', en:'Litre' },
+  unit_box: { ur:'ڈبہ (Box)', en:'Box' },
+  unit_bag: { ur:'بوری/بیگ (Bag)', en:'Bag' },
+
+  inv_customer_title: { ur:'گاہک (اختیاری)', en:'Customer (optional)' },
+  inv_customer_name_ph: { ur:'گاہک کا نام', en:"Customer's name" },
+  inv_customer_phone_ph: { ur:'فون نمبر جیسے 03001234567', en:'Phone number e.g. 03001234567' },
+  inv_items_title: { ur:'آئٹمز', en:'Items' },
+  inv_add_item_btn: { ur:'+ آئٹم شامل کریں', en:'+ Add item' },
+  inv_select_product: { ur:'-- پروڈکٹ چنیں --', en:'-- Select product --' },
+  inv_search_hint: { ur:'ٹائپ کر کے سرچ کریں یا لسٹ سے چنیں', en:'Type to search, or pick from the list' },
+  inv_no_results: { ur:'کوئی پروڈکٹ نہیں ملا', en:'No matching product' },
+  inv_total_label: { ur:'کل بل', en:'Total bill' },
+  inv_payment_title: { ur:'ادائیگی', en:'Payment' },
+  pay_full: { ur:'پورا مل گیا', en:'Paid in full' },
+  pay_udhaar: { ur:'ادھار', en:'Udhaar' },
+  pay_partial: { ur:'کچھ ملا', en:'Partial' },
+  partial_label: { ur:'کتنا پیسہ ابھی ملا', en:'Amount received now' },
+  inv_save_btn: { ur:'انوائس بنائیں', en:'Create invoice' },
+  inv_history_title: { ur:'حالیہ انوائسز', en:'Recent invoices' },
+  inv_history_empty: { ur:'ابھی کوئی انوائس نہیں بنی', en:'No invoices yet' },
+  inv_item_required_alert: { ur:'کم از کم ایک آئٹم چنیں', en:'Select at least one item' },
+  inv_customer_required_alert: { ur:'ادھار کے لیے گاہک کا نام لکھنا ضروری ہے', en:"Customer's name is required for udhaar" },
+  print_btn: { ur:'پرنٹ کریں', en:'Print' },
+  whatsapp_btn: { ur:'واٹس ایپ پر بھیجیں', en:'Send on WhatsApp' },
+  whatsapp_no_phone: { ur:'اس گاہک کا فون نمبر درج نہیں ہے', en:"This customer's phone number is not entered" },
+
+  udhaar_title: { ur:'گاہک جن کا ادھار باقی ہے', en:'Customers with udhaar due' },
+  udhaar_empty: { ur:'کسی کا ادھار باقی نہیں', en:'No udhaar pending' },
+  udhaar_phone_missing: { ur:'فون نمبر نہیں', en:'No phone number' },
+  udhaar_payment_label: { ur:'واپس ملی ادائیگی (Rs)', en:'Payment received (Rs)' },
+  udhaar_payment_btn: { ur:'ادائیگی درج کریں', en:'Record payment' },
+  udhaar_payment_invalid: { ur:'صحیح رقم لکھیں', en:'Enter a valid amount' },
+  udhaar_history_empty: { ur:'کوئی ریکارڈ نہیں', en:'No record' },
+  mila_label: { ur:'ملا', en:'Paid' },
+  bakaya_label: { ur:'باقی', en:'Due' },
+
+  more_expense_title: { ur:'خرچہ درج کریں', en:'Add expense' },
+  expense_category_ph: { ur:'خرچے کی قسم (جیسے: کرایہ، بجلی)', en:'Expense type (e.g. rent, electricity)' },
+  expense_amount_label: { ur:'رقم', en:'Amount' },
+  expense_add_btn: { ur:'خرچہ محفوظ کریں', en:'Save expense' },
+  expense_required: { ur:'خرچے کی قسم اور رقم لکھیں', en:'Enter expense type and amount' },
+  expense_added: { ur:'خرچہ محفوظ ہو گیا', en:'Expense saved' },
+
+  more_report_title: { ur:'رپورٹ بنائیں (PDF)', en:'Generate report (PDF)' },
+  report_range_daily: { ur:'آج', en:'Today' },
+  report_range_weekly: { ur:'ہفتہ', en:'This week' },
+  report_range_monthly: { ur:'مہینہ', en:'This month' },
+  report_range_custom: { ur:'مخصوص تاریخ', en:'Custom dates' },
+  report_from_label: { ur:'تاریخ سے', en:'From date' },
+  report_to_label: { ur:'تاریخ تک', en:'To date' },
+  report_generate_btn: { ur:'PDF رپورٹ ڈاؤن لوڈ کریں', en:'Download PDF report' },
+  report_pdf_title: { ur:'کاروباری رپورٹ', en:'Business report' },
+  report_pdf_period: { ur:'مدت', en:'Period' },
+  report_pdf_sales: { ur:'کل فروخت', en:'Total sales' },
+  report_pdf_cost: { ur:'کل لاگت', en:'Total cost' },
+  report_pdf_profit: { ur:'مجموعی نفع', en:'Gross profit' },
+  report_pdf_expenses: { ur:'کل اخراجات', en:'Total expenses' },
+  report_pdf_net_profit: { ur:'خالص نفع', en:'Net profit' },
+  report_pdf_stock_title: { ur:'اسٹاک کی صورتحال', en:'Stock position' },
+  report_pdf_udhaar_title: { ur:'ادھار کی تفصیل', en:'Udhaar details' },
+  report_pdf_udhaar_total: { ur:'کل ادھار باقی', en:'Total udhaar due' },
+  report_pdf_no_udhaar: { ur:'کسی کا ادھار باقی نہیں', en:'No udhaar pending' },
+  report_pdf_no_stock: { ur:'کوئی پروڈکٹ موجود نہیں', en:'No products found' },
+  report_range_custom_missing: { ur:'دونوں تاریخیں چنیں', en:'Select both dates' },
+  report_pdf_summary_col1: { ur:'تفصیل', en:'Description' },
+  report_pdf_summary_col2: { ur:'رقم', en:'Amount' },
+  report_pdf_col_product: { ur:'پروڈکٹ', en:'Product' },
+  report_pdf_col_qty: { ur:'مقدار', en:'Quantity' },
+  report_pdf_col_cost: { ur:'خریداری قیمت', en:'Cost price' },
+  report_pdf_col_saleprice: { ur:'فروخت قیمت', en:'Sale price' },
+  report_pdf_col_customer: { ur:'گاہک', en:'Customer' },
+  report_pdf_col_phone: { ur:'فون نمبر', en:'Phone' },
+  report_pdf_col_balance: { ur:'باقی رقم', en:'Balance' },
+
+  more_backup_title: { ur:'ڈیٹا بیک اپ', en:'Data backup' },
+  backup_export_btn: { ur:'بیک اپ محفوظ کریں (ڈاؤن لوڈ)', en:'Save backup (download)' },
+  backup_import_btn: { ur:'بیک اپ واپس لائیں', en:'Restore backup' },
+  backup_choose_folder_btn: { ur:'بیک اپ فولڈر منتخب کریں (خودکار بیک اپ)', en:'Choose backup folder (automatic backup)' },
+  backup_folder_active: { ur:'✅ خودکار بیک اپ فعال ہے — ہر تبدیلی خود بخود آپ کے منتخب کردہ فولڈر میں "dukaan-backup.json" کے نام سے محفوظ ہو رہی ہے۔', en:'✅ Automatic backup is active — every change is saved to your chosen folder as "dukaan-backup.json".' },
+  backup_folder_none: { ur:'ابھی کوئی بیک اپ فولڈر منتخب نہیں کیا گیا۔ اوپر بٹن دبا کر ایک فولڈر بنائیں یا منتخب کریں — پھر ہر بار بیک اپ خود بخود اس میں محفوظ ہوتا رہے گا (کیشے صاف کرنے یا ایپ اَن انسٹال کرنے سے بھی یہ فولڈر محفوظ رہے گا)۔', en:'No backup folder selected yet. Tap the button above to create or choose a folder — after that, every backup will be saved there automatically (this folder stays safe even if you clear cache or uninstall the app).' },
+  backup_folder_selected: { ur:'بیک اپ فولڈر منتخب ہو گیا — اب ہر تبدیلی خود بخود اس میں محفوظ ہوگی۔', en:'Backup folder selected — every change will now be saved there automatically.' },
+  backup_folder_unsupported: { ur:'یہ فیچر آپ کے موجودہ براؤزر میں دستیاب نہیں۔ براہ کرم Chrome استعمال کریں یا APK والی ایپ میں آزمائیں۔', en:'This feature is not available in your current browser. Please use Chrome or the installed APK app.' },
+  backup_folder_unsupported_note: { ur:'یہ فیچر اس براؤزر میں دستیاب نہیں (Chrome یا انسٹال شدہ APK ایپ میں دستیاب ہے)۔', en:'This feature is not available in this browser (available in Chrome or the installed APK app).' },
+  backup_folder_reconnect_needed: { ur:'بیک اپ فولڈر سے رابطہ دوبارہ جوڑنا ضروری ہے۔ ', en:'The backup folder connection needs to be reconfirmed. ' },
+  backup_folder_reconnect_btn: { ur:'دوبارہ جوڑیں', en:'Reconnect' },
+  backup_import_confirm: { ur:'موجودہ ڈیٹا اس بیک اپ سے بدل جائے گا۔ جاری رکھیں؟', en:'This will replace your current data with the backup. Continue?' },
+  backup_import_invalid: { ur:'یہ فائل درست بیک اپ نہیں ہے', en:'This file is not a valid backup' },
+  backup_import_done: { ur:'ڈیٹا واپس آ گیا', en:'Data restored' },
+
+  print_invoice_title: { ur:'رسید', en:'Receipt' },
+  print_date_label: { ur:'تاریخ', en:'Date' },
+  print_customer_label: { ur:'گاہک', en:'Customer' },
+  print_item_col: { ur:'آئٹم', en:'Item' },
+  print_qty_col: { ur:'مقدار', en:'Qty' },
+  print_price_col: { ur:'قیمت', en:'Price' },
+  print_subtotal_col: { ur:'ٹوٹل', en:'Subtotal' },
+  print_total_label: { ur:'کل بل', en:'Total' },
+  print_paid_label: { ur:'وصول شدہ', en:'Paid' },
+  print_balance_label: { ur:'باقی (ادھار)', en:'Balance (udhaar)' },
+  print_thanks: { ur:'شکریہ، دوبارہ تشریف لائیں', en:'Thank you, visit again' }
+};
+
+function t(key, params){
+  const lang = db.settings.lang;
+  let str = (T[key] && T[key][lang]) || key;
+  if(params){ Object.keys(params).forEach(k=> str = str.replace('{'+k+'}', params[k]) ); }
+  return str;
+}
+function unitLabel(unit){ return UNIT_LABELS[unit] ? UNIT_LABELS[unit][db.settings.lang] : unit; }
+
+function applyI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{
+    el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph')));
+  });
+}
+
+function setLang(lang){
+  db.settings.lang = lang;
+  document.getElementById('html-root').setAttribute('lang', lang);
+  document.getElementById('html-root').setAttribute('dir', lang==='ur' ? 'rtl' : 'ltr');
+  document.body.className = 'lang-' + lang;
+  document.getElementById('lang-ur-btn').classList.toggle('active', lang==='ur');
+  document.getElementById('lang-en-btn').classList.toggle('active', lang==='en');
+  applyI18n();
+  rebuildUnitSelectLabels();
+  populateShopFields();
+  updateInvoiceSaveBtnLabel();
+  if(!document.getElementById('inv-datetime').value) setInvoiceDateTimeNow();
+  saveData();
+  render();
+}
+
+function updateInvoiceSaveBtnLabel(){
+  document.getElementById('inv-save-btn-label').textContent = editingInvoiceId ? t('inv_update_btn') : t('inv_save_btn');
+}
+
+function toDatetimeLocalValue(d){
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function setInvoiceDateTimeNow(){
+  const el = document.getElementById('inv-datetime');
+  if(el) el.value = toDatetimeLocalValue(new Date());
+}
+
+function populateShopFields(){
+  const nameEl = document.getElementById('shop-name');
+  if(!nameEl) return;
+  document.getElementById('shop-name').value = db.settings.shopName || '';
+  document.getElementById('shop-description').value = db.settings.businessDescription || '';
+  document.getElementById('shop-proprietor').value = db.settings.proprietorName || '';
+  document.getElementById('shop-phone').value = db.settings.shopPhone || '';
+  document.getElementById('shop-address').value = db.settings.shopAddress || '';
+  document.getElementById('shop-payment-id').value = db.settings.paymentId || '';
+  showShopLogoPreview();
+}
+
+function saveShopInfo(){
+  db.settings.shopName = document.getElementById('shop-name').value.trim();
+  db.settings.businessDescription = document.getElementById('shop-description').value.trim();
+  db.settings.proprietorName = document.getElementById('shop-proprietor').value.trim();
+  db.settings.shopPhone = document.getElementById('shop-phone').value.trim();
+  db.settings.shopAddress = document.getElementById('shop-address').value.trim();
+  db.settings.paymentId = document.getElementById('shop-payment-id').value.trim();
+  saveData();
+  alert(t('shop_info_saved'));
+}
+
+function showShopLogoPreview(){
+  const wrap = document.getElementById('shop-logo-preview-wrap');
+  const img = document.getElementById('shop-logo-preview');
+  if(!wrap || !img) return;
+  if(db.settings.logoDataUrl){
+    img.src = db.settings.logoDataUrl;
+    wrap.style.display = 'block';
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
+function onShopLogoSelected(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  if(file.size > 500*1024){
+    alert(t('shop_logo_too_large'));
+    event.target.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    db.settings.logoDataUrl = e.target.result;
+    saveData();
+    showShopLogoPreview();
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeShopLogo(){
+  db.settings.logoDataUrl = '';
+  const input = document.getElementById('shop-logo-input');
+  if(input) input.value = '';
+  saveData();
+  showShopLogoPreview();
+}
+
+function buildPaymentQR(text, size){
+  if(typeof QRious === 'undefined' || !text) return '';
+  try{
+    const qr = new QRious({ value: text, size: size || 140, level: 'M' });
+    return qr.toDataURL('image/png');
+  }catch(e){ return ''; }
+}
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function money(n){ return 'Rs ' + Math.round(n).toLocaleString('en-PK'); }
+function todayKey(){ return new Date().toISOString().slice(0,10); }
+
+async function loadData(){
+  try{
+    const raw = localStorage.getItem('dukaan-db');
+    if(raw){
+      const loaded = JSON.parse(raw);
+      db = Object.assign({ products:[], invoices:[], customers:[], expenses:[], settings:{lang:'ur', shopName:'', businessDescription:'', proprietorName:'', logoDataUrl:'', shopPhone:'', shopAddress:'', paymentId:''} }, loaded);
+      if(!db.settings) db.settings = { lang:'ur', shopName:'', businessDescription:'', proprietorName:'', logoDataUrl:'', shopPhone:'', shopAddress:'', paymentId:'' };
+      db.settings = Object.assign({ shopName:'', businessDescription:'', proprietorName:'', logoDataUrl:'', shopPhone:'', shopAddress:'', paymentId:'' }, db.settings);
+      if(!db.expenses) db.expenses = [];
+    }
+  }catch(e){ /* no data yet */ }
+  setLang(db.settings.lang || 'ur');
+}
+async function saveData(){
+  try{ localStorage.setItem('dukaan-db', JSON.stringify(db)); }
+  catch(e){ console.error('save failed', e); }
+  if(backupDirHandle){ writeBackupToFolder(); }
+}
+
+/* ---------- Automatic folder backup (File System Access API) ---------- */
+let backupDirHandle = null;
+let pendingBackupDirHandle = null;
+
+function idbOpen(){
+  return new Promise((resolve, reject)=>{
+    const req = indexedDB.open('dukaan-fs', 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('handles');
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbSet(key, val){
+  const dbi = await idbOpen();
+  return new Promise((resolve, reject)=>{
+    const tx = dbi.transaction('handles','readwrite');
+    tx.objectStore('handles').put(val, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function idbGet(key){
+  const dbi = await idbOpen();
+  return new Promise((resolve, reject)=>{
+    const tx = dbi.transaction('handles','readonly');
+    const req = tx.objectStore('handles').get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function chooseBackupFolder(){
+  if(!('showDirectoryPicker' in window)){
+    alert(t('backup_folder_unsupported'));
+    return;
+  }
+  try{
+    const handle = await window.showDirectoryPicker({ id:'dukaan-backup', mode:'readwrite' });
+    backupDirHandle = handle;
+    pendingBackupDirHandle = null;
+    await idbSet('backupDir', handle);
+    await writeBackupToFolder();
+    updateBackupFolderStatus();
+    alert(t('backup_folder_selected'));
+  }catch(e){ /* user cancelled */ }
+}
+
+async function reconnectBackupFolder(){
+  if(!pendingBackupDirHandle){ return chooseBackupFolder(); }
+  try{
+    const perm = await pendingBackupDirHandle.requestPermission({ mode:'readwrite' });
+    if(perm === 'granted'){
+      backupDirHandle = pendingBackupDirHandle;
+      pendingBackupDirHandle = null;
+      await writeBackupToFolder();
+      updateBackupFolderStatus();
+      alert(t('backup_folder_selected'));
+    }
+  }catch(e){ /* denied or cancelled */ }
+}
+
+async function restoreBackupFolderHandle(){
+  if(!('indexedDB' in window)) { updateBackupFolderStatus(); return; }
+  try{
+    const handle = await idbGet('backupDir');
+    if(handle){
+      const perm = await handle.queryPermission({ mode:'readwrite' });
+      if(perm === 'granted'){ backupDirHandle = handle; }
+      else { pendingBackupDirHandle = handle; }
+    }
+  }catch(e){ /* ignore */ }
+  updateBackupFolderStatus();
+}
+
+async function writeBackupToFolder(){
+  if(!backupDirHandle) return false;
+  try{
+    const fileHandle = await backupDirHandle.getFileHandle('dukaan-backup.json', { create:true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(JSON.stringify(db, null, 2));
+    await writable.close();
+    return true;
+  }catch(e){ console.error('folder backup failed', e); return false; }
+}
+
+function updateBackupFolderStatus(){
+  const el = document.getElementById('backup-folder-status');
+  if(!el) return;
+  if(backupDirHandle){
+    el.textContent = t('backup_folder_active');
+  } else if(pendingBackupDirHandle){
+    el.innerHTML = t('backup_folder_reconnect_needed') + '<span style="text-decoration:underline; cursor:pointer; color:var(--teal-dark); font-weight:700;" onclick="reconnectBackupFolder()">' + t('backup_folder_reconnect_btn') + '</span>';
+  } else if(!('showDirectoryPicker' in window)){
+    el.textContent = t('backup_folder_unsupported_note');
+  } else {
+    el.textContent = t('backup_folder_none');
+  }
+}
+/* ---------- end automatic folder backup ---------- */
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.querySelector('nav button[data-screen="'+name+'"]').classList.add('active');
+  if(name==='invoice' && document.getElementById('invoice-items').children.length===0){
+    addInvoiceItemRow();
+  }
+  render();
+}
+
+function rebuildUnitSelectLabels(){
+  const sel = document.getElementById('p-unit');
+  if(!sel) return;
+  Array.from(sel.options).forEach(opt=>{
+    opt.textContent = t('unit_' + opt.value);
+  });
+}
+
+function openProductModal(editId){
+  document.getElementById('p-id').value = editId || '';
+  if(editId){
+    const p = db.products.find(x=>x.id===editId);
+    document.getElementById('p-name').value = p.name;
+    document.getElementById('p-unit').value = p.unit;
+    document.getElementById('p-cost').value = p.cost;
+    document.getElementById('p-price').value = p.price;
+    document.getElementById('p-qty').value = p.qty;
+    document.getElementById('p-lowalert').value = p.lowAlert;
+    document.getElementById('product-modal-title').textContent = t('p_edit_title');
+  }else{
+    document.getElementById('p-name').value='';
+    document.getElementById('p-unit').value='piece';
+    document.getElementById('p-cost').value='';
+    document.getElementById('p-price').value='';
+    document.getElementById('p-qty').value='';
+    document.getElementById('p-lowalert').value='5';
+    document.getElementById('product-modal-title').textContent = t('p_modal_title');
+  }
+  document.getElementById('product-modal').classList.add('show');
+}
+function closeProductModal(){ document.getElementById('product-modal').classList.remove('show'); }
+
+function saveProduct(){
+  const id = document.getElementById('p-id').value;
+  const name = document.getElementById('p-name').value.trim();
+  const unit = document.getElementById('p-unit').value;
+  const cost = parseFloat(document.getElementById('p-cost').value) || 0;
+  const price = parseFloat(document.getElementById('p-price').value) || 0;
+  const qty = parseFloat(document.getElementById('p-qty').value) || 0;
+  const lowAlert = parseFloat(document.getElementById('p-lowalert').value) || 5;
+  if(!name){ alert(t('p_name_required')); return; }
+  if(id){
+    const p = db.products.find(x=>x.id===id);
+    Object.assign(p, { name, unit, cost, price, qty, lowAlert });
+  }else{
+    db.products.push({ id: uid(), name, unit, cost, price, qty, lowAlert });
+  }
+  saveData();
+  closeProductModal();
+  render();
+}
+
+function deleteProduct(id){
+  if(!confirm(t('p_delete_confirm'))) return;
+  db.products = db.products.filter(p=>p.id!==id);
+  saveData();
+  render();
+}
+
+function addInvoiceItemRow(){
+  const wrap = document.getElementById('invoice-items');
+  const row = document.createElement('div');
+  row.className = 'invoice-item-row';
+  row.innerHTML = `
+    <div class="combo-wrap">
+      <input type="text" class="product-search" placeholder="${t('inv_select_product')}"
+        oninput="onProductSearchInput(this)" onfocus="filterProductSuggestions(this)" onblur="hideSuggestionsDelayed(this)">
+      <input type="hidden" class="product-id">
+      <div class="sugg-box"></div>
+    </div>
+    <input type="number" class="qty-input" placeholder="0" value="1" min="0" step="any" oninput="calcInvoiceTotal()">
+    <span class="unit-tag"></span>
+    <button class="btn-danger btn-small" onclick="this.parentElement.remove(); calcInvoiceTotal();">&#10005;</button>
+  `;
+  wrap.appendChild(row);
+  calcInvoiceTotal();
+}
+
+function filterProductSuggestions(input){
+  const row = input.closest('.invoice-item-row');
+  const query = input.value.trim().toLowerCase();
+  const list = query ? db.products.filter(p=>p.name.toLowerCase().includes(query)) : db.products;
+  const box = row.querySelector('.sugg-box');
+  box.innerHTML = list.length ? list.map(p=>`
+    <div class="sugg-item" onmousedown="selectProductSuggestion(this,'${p.id}')">${p.name} — ${money(p.price)}/${unitLabel(p.unit)}</div>
+  `).join('') : `<div class="sugg-empty">${t('inv_no_results')}</div>`;
+  box.style.display = 'block';
+}
+
+function onProductSearchInput(input){
+  const row = input.closest('.invoice-item-row');
+  const hidden = row.querySelector('.product-id');
+  const prod = db.products.find(p=>p.id===hidden.value);
+  if(!prod || prod.name !== input.value){
+    hidden.value = '';
+    row.querySelector('.unit-tag').textContent = '';
+  }
+  filterProductSuggestions(input);
+  calcInvoiceTotal();
+}
+
+function selectProductSuggestion(el, pid){
+  const row = el.closest('.invoice-item-row');
+  const prod = db.products.find(p=>p.id===pid);
+  row.querySelector('.product-search').value = prod.name;
+  row.querySelector('.product-id').value = pid;
+  row.querySelector('.unit-tag').textContent = unitLabel(prod.unit);
+  row.querySelector('.sugg-box').style.display = 'none';
+  calcInvoiceTotal();
+}
+
+function hideSuggestionsDelayed(input){
+  const row = input.closest('.invoice-item-row');
+  setTimeout(()=>{ row.querySelector('.sugg-box').style.display='none'; }, 150);
+}
+
+function calcInvoiceTotal(){
+  let total = 0;
+  document.querySelectorAll('#invoice-items .invoice-item-row').forEach(row=>{
+    const pid = row.querySelector('.product-id').value;
+    const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
+    const prod = db.products.find(p=>p.id===pid);
+    if(prod) total += prod.price * qty;
+  });
+  document.getElementById('invoice-total').textContent = money(total);
+  return total;
+}
+
+function setPayMode(mode){
+  payMode = mode;
+  ['full','udhaar','partial'].forEach(m=>{
+    document.getElementById('pay-'+m).classList.toggle('selected', m===mode);
+  });
+  document.getElementById('partial-field').style.display = mode==='partial' ? 'block' : 'none';
+}
+
+function saveInvoice(){
+  const items = [];
+  document.querySelectorAll('#invoice-items .invoice-item-row').forEach(row=>{
+    const pid = row.querySelector('.product-id').value;
+    const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
+    const prod = db.products.find(p=>p.id===pid);
+    if(prod && qty>0){
+      items.push({ productId: prod.id, name: prod.name, unit: prod.unit, qty, price: prod.price, cost: prod.cost });
+    }
+  });
+  if(items.length===0){ alert(t('inv_item_required_alert')); return; }
+
+  const total = items.reduce((s,i)=>s+i.price*i.qty, 0);
+  let paid = 0, status = 'paid';
+  if(payMode==='full'){ paid = total; status='paid'; }
+  else if(payMode==='udhaar'){ paid = 0; status='udhaar'; }
+  else{
+    paid = parseFloat(document.getElementById('partial-amount').value) || 0;
+    status = paid>=total ? 'paid' : 'partial';
+  }
+
+  const custName = document.getElementById('inv-customer-name').value.trim();
+  const custPhone = document.getElementById('inv-customer-phone').value.trim();
+  const balanceDue = total - paid;
+
+  if(balanceDue > 0 && !custName){ alert(t('inv_customer_required_alert')); return; }
+
+  const dtVal = document.getElementById('inv-datetime').value;
+  const dateISO = dtVal ? new Date(dtVal).toISOString() : new Date().toISOString();
+
+  let oldInv = null;
+  if(editingInvoiceId){
+    oldInv = db.invoices.find(i=>i.id===editingInvoiceId);
+    if(oldInv){
+      // Reverse the stock effect of the original invoice
+      oldInv.items.forEach(it=>{
+        const prod = db.products.find(p=>p.id===it.productId);
+        if(prod) prod.qty += it.qty;
+      });
+      // Reverse the customer-balance effect of the original invoice
+      if(oldInv.customerId){
+        const cust = db.customers.find(c=>c.id===oldInv.customerId);
+        if(cust) cust.balance = Math.max(0, cust.balance - (oldInv.total - oldInv.paid));
+      }
+    }
+  }
+
+  let customerId = null;
+  if(balanceDue > 0){
+    let cust = db.customers.find(c=>c.name.toLowerCase()===custName.toLowerCase());
+    if(!cust){
+      cust = { id: uid(), name: custName, phone: custPhone, balance: 0 };
+      db.customers.push(cust);
+    }
+    cust.balance += balanceDue;
+    customerId = cust.id;
+  } else if(custName){
+    let cust = db.customers.find(c=>c.name.toLowerCase()===custName.toLowerCase());
+    if(cust) customerId = cust.id;
+  }
+
+  items.forEach(it=>{
+    const prod = db.products.find(p=>p.id===it.productId);
+    if(prod) prod.qty = Math.max(0, prod.qty - it.qty);
+  });
+
+  let invoiceId;
+  if(oldInv){
+    invoiceId = oldInv.id;
+    Object.assign(oldInv, {
+      date: dateISO, items, total, paid, status,
+      customerId, customerName: custName || null, customerPhone: custPhone || null
+    });
+  } else {
+    invoiceId = uid();
+    db.invoices.push({
+      id: invoiceId, date: dateISO, items, total, paid, status,
+      customerId, customerName: custName || null, customerPhone: custPhone || null
+    });
+  }
+  lastInvoiceId = invoiceId;
+  const wasEditing = !!editingInvoiceId;
+  editingInvoiceId = null;
+
+  saveData();
+
+  document.getElementById('invoice-items').innerHTML='';
+  document.getElementById('inv-customer-name').value='';
+  document.getElementById('inv-customer-phone').value='';
+  document.getElementById('partial-amount').value='';
+  setPayMode('full');
+  addInvoiceItemRow();
+  setInvoiceDateTimeNow();
+  updateInvoiceSaveBtnLabel();
+  document.getElementById('cancel-edit-btn').style.display = 'none';
+  document.getElementById('edit-invoice-notice').style.display = 'none';
+
+  if(wasEditing){
+    alert(t('inv_updated_msg'));
+  } else {
+    showReceiptModal(invoiceId, balanceDue);
+  }
+  render();
+}
+
+function openInvoiceForEdit(invoiceId){
+  const inv = db.invoices.find(i=>i.id===invoiceId);
+  if(!inv) return;
+  editingInvoiceId = invoiceId;
+
+  document.getElementById('inv-customer-name').value = inv.customerName || '';
+  document.getElementById('inv-customer-phone').value = inv.customerPhone || '';
+  document.getElementById('inv-datetime').value = toDatetimeLocalValue(new Date(inv.date));
+
+  document.getElementById('invoice-items').innerHTML = '';
+  inv.items.forEach(it=>{
+    addInvoiceItemRow();
+    const rows = document.querySelectorAll('#invoice-items .invoice-item-row');
+    const row = rows[rows.length-1];
+    row.querySelector('.product-search').value = it.name;
+    row.querySelector('.product-id').value = it.productId;
+    row.querySelector('.qty-input').value = it.qty;
+    row.querySelector('.unit-tag').textContent = unitLabel(it.unit);
+  });
+
+  if(inv.paid <= 0){ setPayMode('udhaar'); }
+  else if(inv.paid >= inv.total){ setPayMode('full'); }
+  else{ setPayMode('partial'); document.getElementById('partial-amount').value = inv.paid; }
+
+  calcInvoiceTotal();
+  updateInvoiceSaveBtnLabel();
+  document.getElementById('cancel-edit-btn').style.display = 'block';
+  document.getElementById('edit-invoice-notice').style.display = 'block';
+
+  showScreen('invoice');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelEditInvoice(){
+  editingInvoiceId = null;
+  document.getElementById('invoice-items').innerHTML='';
+  document.getElementById('inv-customer-name').value='';
+  document.getElementById('inv-customer-phone').value='';
+  document.getElementById('partial-amount').value='';
+  setPayMode('full');
+  addInvoiceItemRow();
+  setInvoiceDateTimeNow();
+  updateInvoiceSaveBtnLabel();
+  document.getElementById('cancel-edit-btn').style.display = 'none';
+  document.getElementById('edit-invoice-notice').style.display = 'none';
+}
+
+function showReceiptModal(invoiceId, balanceDue){
+  const inv = db.invoices.find(i=>i.id===invoiceId);
+  const lines = inv.items.map(it=>`
+    <div class="item-row">
+      <div><div class="name">${it.name}</div><div class="sub">${it.qty} ${unitLabel(it.unit)} x ${money(it.price)}</div></div>
+      <div class="right"><div class="name">${money(it.price*it.qty)}</div></div>
+    </div>
+  `).join('');
+  const summary = lines + `
+    <div class="item-row"><div class="name">${t('inv_total_label')}</div><div class="right name">${money(inv.total)}</div></div>
+    <div class="item-row"><div class="name">${t('print_paid_label')}</div><div class="right">${money(inv.paid)}</div></div>
+    ${balanceDue>0 ? `<div class="item-row"><div class="name low-stock">${t('print_balance_label')}</div><div class="right low-stock">${money(balanceDue)}</div></div>` : ''}
+  `;
+  document.getElementById('receipt-summary').innerHTML = summary;
+  document.getElementById('receipt-modal').classList.add('show');
+}
+function closeReceiptModal(){ document.getElementById('receipt-modal').classList.remove('show'); }
+
+function buildPrintHTML(invoiceId){
+  const inv = db.invoices.find(i=>i.id===invoiceId);
+  const balance = inv.total - inv.paid;
+  const rows = inv.items.map(it=>`
+    <tr>
+      <td>${it.name}</td>
+      <td>${it.qty} ${unitLabel(it.unit)}</td>
+      <td>${money(it.price)}</td>
+      <td>${money(it.price*it.qty)}</td>
+    </tr>
+  `).join('');
+  const qrDataUrl = buildPaymentQR(db.settings.paymentId, 140);
+  return `
+    <div class="pr-header">
+      ${db.settings.logoDataUrl ? `<img class="pr-logo" src="${db.settings.logoDataUrl}" alt="Logo">` : ''}
+      ${db.settings.shopName ? `<h2>${db.settings.shopName}</h2>` : ''}
+      ${db.settings.businessDescription ? `<div class="pr-desc">${db.settings.businessDescription}</div>` : ''}
+      ${(db.settings.proprietorName || db.settings.shopPhone) ? `<div class="pr-proprietor">${db.settings.proprietorName ? `${t('print_proprietor_label')}: ${db.settings.proprietorName}` : ''}${(db.settings.proprietorName && db.settings.shopPhone) ? ' — ' : ''}${db.settings.shopPhone || ''}</div>` : ''}
+      ${db.settings.shopAddress ? `<div>${db.settings.shopAddress}</div>` : ''}
+      <div class="pr-tagline">${t('print_tagline')}</div>
+      <div style="margin-top:6px;">${t('print_invoice_title')}</div>
+      <div>${t('print_date_label')}: ${new Date(inv.date).toLocaleString('en-PK')}</div>
+      ${inv.customerName ? `<div>${t('print_customer_label')}: ${inv.customerName} ${inv.customerPhone?('- '+inv.customerPhone):''}</div>` : ''}
+    </div>
+    <table class="pr-table">
+      <thead><tr><th>${t('print_item_col')}</th><th>${t('print_qty_col')}</th><th>${t('print_price_col')}</th><th>${t('print_subtotal_col')}</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="pr-total-line grand"><span>${t('print_total_label')}</span><span>${money(inv.total)}</span></div>
+    <div class="pr-total-line"><span>${t('print_paid_label')}</span><span>${money(inv.paid)}</span></div>
+    ${balance>0 ? `<div class="pr-total-line"><span>${t('print_balance_label')}</span><span>${money(balance)}</span></div>` : ''}
+    ${qrDataUrl ? `
+      <div class="pr-qr-wrap">
+        <img src="${qrDataUrl}" alt="QR">
+        <div class="pr-qr-caption">${t('print_scan_pay')}<br>${db.settings.paymentId}</div>
+      </div>
+    ` : ''}
+    <div style="text-align:center;margin-top:20px;">${t('print_thanks')}</div>
+  `;
+}
+
+function renderPrintAreaAndPrint(html){
+  const area = document.getElementById('print-area');
+  area.innerHTML = html;
+  const imgs = Array.from(area.querySelectorAll('img'));
+  if(imgs.length === 0){ window.print(); return; }
+  let remaining = imgs.length;
+  let printed = false;
+  const tryPrint = () => {
+    remaining--;
+    if(remaining <= 0 && !printed){ printed = true; window.print(); }
+  };
+  imgs.forEach(img=>{
+    if(img.complete && img.naturalWidth > 0){ tryPrint(); }
+    else{ img.addEventListener('load', tryPrint); img.addEventListener('error', tryPrint); }
+  });
+  // Safety net in case an image never fires load/error for some reason
+  setTimeout(()=>{ if(!printed){ printed = true; window.print(); } }, 800);
+}
+function printCurrentInvoice(){
+  renderPrintAreaAndPrint(buildPrintHTML(lastInvoiceId));
+}
+function printInvoiceFromHistory(invoiceId){
+  renderPrintAreaAndPrint(buildPrintHTML(invoiceId));
+}
+
+function formatPakPhone(raw){
+  let d = (raw || '').replace(/\D/g, '');
+  if(!d) return '';
+  if(d.startsWith('0092')) d = d.slice(2);
+  if(d.startsWith('92') && d.length===12) return d;
+  if(d.startsWith('0') && d.length===11) return '92' + d.slice(1);
+  if(d.length===10 && d.startsWith('3')) return '92' + d;
+  return d;
+}
+
+function shareWhatsApp(){
+  const inv = db.invoices.find(i=>i.id===lastInvoiceId);
+  if(!inv) return;
+  const phone = formatPakPhone(inv.customerPhone);
+  if(!phone){ alert(t('whatsapp_no_phone')); return; }
+  const shopNameForMsg = db.settings.shopName || t('app_title');
+  let msg = `${shopNameForMsg} - ${t('print_invoice_title')}\n`;
+  inv.items.forEach(it=>{ msg += `${it.name}: ${it.qty} ${unitLabel(it.unit)} x ${money(it.price)} = ${money(it.price*it.qty)}\n`; });
+  msg += `${t('print_total_label')}: ${money(inv.total)}\n${t('print_paid_label')}: ${money(inv.paid)}`;
+  const balance = inv.total - inv.paid;
+  if(balance>0) msg += `\n${t('print_balance_label')}: ${money(balance)}`;
+  const url = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+  window.open(url, '_blank');
+}
+
+function openUdhaarModal(customerId){
+  currentUdhaarCustomerId = customerId;
+  const cust = db.customers.find(c=>c.id===customerId);
+  document.getElementById('udhaar-modal-name').textContent = cust.name + ' — ' + t('bakaya_label') + ': ' + money(cust.balance);
+  const history = db.invoices.filter(i=>i.customerId===customerId);
+  const hist = document.getElementById('udhaar-modal-history');
+  hist.innerHTML = history.length ? history.map(i=>`
+    <div class="item-row">
+      <div><div class="name">${new Date(i.date).toLocaleDateString('en-PK')}</div><div class="sub">${i.items.map(x=>x.name+' x'+x.qty+' '+unitLabel(x.unit)).join(', ')}</div></div>
+      <div class="right"><div class="name">${money(i.total)}</div><div class="sub">${t('mila_label')}: ${money(i.paid)}</div></div>
+    </div>
+  `).join('') : `<div class="empty">${t('udhaar_history_empty')}</div>`;
+  document.getElementById('udhaar-payment-amount').value='';
+  document.getElementById('udhaar-modal').classList.add('show');
+}
+function closeUdhaarModal(){ document.getElementById('udhaar-modal').classList.remove('show'); }
+
+function recordUdhaarPayment(){
+  const amt = parseFloat(document.getElementById('udhaar-payment-amount').value) || 0;
+  if(amt<=0){ alert(t('udhaar_payment_invalid')); return; }
+  const cust = db.customers.find(c=>c.id===currentUdhaarCustomerId);
+  cust.balance = Math.max(0, cust.balance - amt);
+  saveData();
+  closeUdhaarModal();
+  render();
+}
+
+function addExpense(){
+  const category = document.getElementById('exp-category').value.trim();
+  const amount = parseFloat(document.getElementById('exp-amount').value) || 0;
+  if(!category || amount<=0){ alert(t('expense_required')); return; }
+  db.expenses.push({ id: uid(), category, amount, date: new Date().toISOString() });
+  saveData();
+  document.getElementById('exp-category').value='';
+  document.getElementById('exp-amount').value='';
+  alert(t('expense_added'));
+  render();
+}
+
+function setReportRange(range){
+  reportRange = range;
+  ['daily','weekly','monthly','custom'].forEach(r=>{
+    document.getElementById('range-'+r).classList.toggle('selected', r===range);
+  });
+  document.getElementById('custom-range-fields').style.display = range==='custom' ? 'grid' : 'none';
+}
+
+function getRangeBounds(){
+  const now = new Date();
+  let from, to;
+  if(reportRange==='daily'){
+    from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    to = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23,59,59);
+  } else if(reportRange==='weekly'){
+    from = new Date(now); from.setDate(now.getDate()-7);
+    to = now;
+  } else if(reportRange==='monthly'){
+    from = new Date(now); from.setDate(now.getDate()-30);
+    to = now;
+  } else {
+    const fromVal = document.getElementById('report-from').value;
+    const toVal = document.getElementById('report-to').value;
+    if(!fromVal || !toVal){ return null; }
+    from = new Date(fromVal);
+    to = new Date(toVal + 'T23:59:59');
+  }
+  return { from, to };
+}
+
+function generateReport(){
+  const bounds = getRangeBounds();
+  if(!bounds){ alert(t('report_range_custom_missing')); return; }
+  const { from, to } = bounds;
+
+  let sales=0, cost=0, profit=0;
+  db.invoices.forEach(inv=>{
+    const d = new Date(inv.date);
+    if(d>=from && d<=to){
+      sales += inv.total;
+      inv.items.forEach(it=>cost += it.cost*it.qty);
+    }
+  });
+  profit = sales - cost;
+
+  let expenses = 0;
+  db.expenses.forEach(e=>{
+    const d = new Date(e.date);
+    if(d>=from && d<=to) expenses += e.amount;
+  });
+  const netProfit = profit - expenses;
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const tealRGB = [31, 95, 91];
+  const pageW = doc.internal.pageSize.getWidth();
+
+  doc.setFontSize(16); doc.setFont(undefined,'bold');
+  doc.text(t('app_title') + ' - ' + t('report_pdf_title'), 14, 18);
+  doc.setFontSize(10); doc.setFont(undefined,'normal');
+  doc.text(t('report_pdf_period') + ': ' + from.toLocaleDateString('en-PK') + ' - ' + to.toLocaleDateString('en-PK'), 14, 25);
+
+  doc.autoTable({
+    startY: 32,
+    head: [[t('report_pdf_summary_col1'), t('report_pdf_summary_col2')]],
+    body: [
+      [t('report_pdf_sales'), money(sales)],
+      [t('report_pdf_cost'), money(cost)],
+      [t('report_pdf_profit'), money(profit)],
+      [t('report_pdf_expenses'), money(expenses)],
+      [t('report_pdf_net_profit'), money(netProfit)]
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: tealRGB },
+    styles: { fontSize: 10 },
+    columnStyles: { 1: { halign: 'right' } }
+  });
+
+  let y = doc.lastAutoTable.finalY + 12;
+  doc.setFontSize(13); doc.setFont(undefined,'bold');
+  doc.text(t('report_pdf_stock_title'), 14, y);
+  doc.setFont(undefined,'normal');
+
+  if(db.products.length===0){
+    doc.setFontSize(10);
+    doc.text(t('report_pdf_no_stock'), 14, y+8);
+    y += 14;
+  } else {
+    doc.autoTable({
+      startY: y + 4,
+      head: [[t('report_pdf_col_product'), t('report_pdf_col_qty'), t('report_pdf_col_cost'), t('report_pdf_col_saleprice')]],
+      body: db.products.map(p=>[p.name, p.qty + ' ' + unitLabel(p.unit), money(p.cost), money(p.price)]),
+      theme: 'striped',
+      headStyles: { fillColor: tealRGB },
+      styles: { fontSize: 9 },
+      columnStyles: { 1: { halign:'right' }, 2: { halign:'right' }, 3: { halign:'right' } }
+    });
+    y = doc.lastAutoTable.finalY + 12;
+  }
+
+  if(y > 250){ doc.addPage(); y = 18; }
+  doc.setFontSize(13); doc.setFont(undefined,'bold');
+  doc.text(t('report_pdf_udhaar_title'), 14, y);
+  doc.setFont(undefined,'normal');
+
+  const withBalance = db.customers.filter(c=>c.balance>0);
+  if(withBalance.length===0){
+    doc.setFontSize(10);
+    doc.text(t('report_pdf_no_udhaar'), 14, y+8);
+  } else {
+    const totalUdhaar = withBalance.reduce((s,c)=>s+c.balance,0);
+    doc.autoTable({
+      startY: y + 4,
+      head: [[t('report_pdf_col_customer'), t('report_pdf_col_phone'), t('report_pdf_col_balance')]],
+      body: withBalance.map(c=>[c.name, c.phone||'-', money(c.balance)]),
+      foot: [[t('report_pdf_udhaar_total'), '', money(totalUdhaar)]],
+      theme: 'striped',
+      headStyles: { fillColor: tealRGB },
+      footStyles: { fillColor: [200,145,42], fontStyle:'bold' },
+      styles: { fontSize: 9 },
+      columnStyles: { 2: { halign:'right' } }
+    });
+  }
+
+  const pageCount = doc.internal.getNumberOfPages();
+  for(let i=1;i<=pageCount;i++){
+    doc.setPage(i);
+    doc.setFontSize(8); doc.setTextColor(120);
+    doc.text(new Date().toLocaleString('en-PK'), 14, doc.internal.pageSize.getHeight()-8);
+  }
+
+  doc.save('report-' + todayKey() + '.pdf');
+}
+
+function exportBackup(){
+  const blob = new Blob([JSON.stringify(db)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'dukaan-backup-' + todayKey() + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importBackup(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data.products || !data.invoices){ alert(t('backup_import_invalid')); return; }
+      if(!confirm(t('backup_import_confirm'))) return;
+      db = Object.assign({ products:[], invoices:[], customers:[], expenses:[], settings:{lang:'ur', shopName:'', businessDescription:'', proprietorName:'', logoDataUrl:'', shopPhone:'', shopAddress:'', paymentId:''} }, data);
+      db.settings = Object.assign({ shopName:'', businessDescription:'', proprietorName:'', logoDataUrl:'', shopPhone:'', shopAddress:'', paymentId:'' }, db.settings);
+      saveData();
+      setLang(db.settings.lang || 'ur');
+      alert(t('backup_import_done'));
+    }catch(err){ alert(t('backup_import_invalid')); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function render(){
+  const lang = db.settings.lang === 'ur' ? 'ur-PK' : 'en-PK';
+  document.getElementById('today-date').textContent = new Date().toLocaleDateString(lang, { weekday:'long', day:'numeric', month:'long' });
+  updateBackupFolderStatus();
+
+  const today = todayKey();
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate()-7);
+
+  let todaySales=0, todayProfit=0, weekSales=0, weekProfit=0, todayExpense=0;
+  db.invoices.forEach(inv=>{
+    const d = new Date(inv.date);
+    const profit = inv.items.reduce((s,i)=>s+(i.price-i.cost)*i.qty,0);
+    if(inv.date.slice(0,10)===today){ todaySales+=inv.total; todayProfit+=profit; }
+    if(d>=weekAgo){ weekSales+=inv.total; weekProfit+=profit; }
+  });
+  db.expenses.forEach(e=>{
+    if(e.date.slice(0,10)===today) todayExpense += e.amount;
+  });
+
+  document.getElementById('today-sales').textContent = money(todaySales);
+  document.getElementById('today-profit').textContent = money(todayProfit);
+  document.getElementById('today-expense').textContent = money(todayExpense);
+  document.getElementById('today-net-profit').textContent = money(todayProfit-todayExpense);
+  document.getElementById('week-sales').textContent = money(weekSales);
+  document.getElementById('week-profit').textContent = money(weekProfit);
+
+  const totalUdhaar = db.customers.reduce((s,c)=>s+c.balance,0);
+  document.getElementById('total-udhaar').textContent = money(totalUdhaar);
+
+  const lowStock = db.products.filter(p=>p.qty<=p.lowAlert);
+  document.getElementById('low-stock-count').textContent = lowStock.length;
+  document.getElementById('low-stock-list').innerHTML = lowStock.length ? lowStock.map(p=>`
+    <div class="item-row"><div><div class="name">${p.name}</div><div class="sub low-stock">${t('low_stock_left',{n:p.qty,u:unitLabel(p.unit)})}</div></div></div>
+  `).join('') : `<div class="empty">${t('dash_low_stock_empty')}</div>`;
+
+  document.getElementById('inventory-list').innerHTML = db.products.length ? db.products.map(p=>`
+    <div class="item-row">
+      <div><div class="name">${p.name}</div><div class="sub ${p.qty<=p.lowAlert?'low-stock':''}">${p.qty} ${unitLabel(p.unit)} &middot; ${money(p.price)}/${unitLabel(p.unit)}</div></div>
+      <div class="item-actions">
+        <button class="btn-secondary btn-small" onclick="openProductModal('${p.id}')">${t('p_edit_btn')}</button>
+        <button class="btn-danger btn-small" onclick="deleteProduct('${p.id}')">${t('p_delete_btn')}</button>
+      </div>
+    </div>
+  `).join('') : `<div class="empty">${t('inv_empty')}</div>`;
+
+  const withBalance = db.customers.filter(c=>c.balance>0).sort((a,b)=>b.balance-a.balance);
+  document.getElementById('udhaar-list').innerHTML = withBalance.length ? withBalance.map(c=>`
+    <div class="item-row" onclick="openUdhaarModal('${c.id}')" style="cursor:pointer;">
+      <div><div class="name">${c.name}</div><div class="sub">${c.phone || t('udhaar_phone_missing')}</div></div>
+      <div class="right"><div class="name low-stock">${money(c.balance)}</div></div>
+    </div>
+  `).join('') : `<div class="empty">${t('udhaar_empty')}</div>`;
+
+  const recentInvoices = db.invoices.slice(-10).reverse();
+  document.getElementById('invoice-history-list').innerHTML = recentInvoices.length ? recentInvoices.map(i=>`
+    <div class="item-row">
+      <div><div class="name">${i.customerName || '-'}</div><div class="sub">${new Date(i.date).toLocaleString(lang)} &middot; ${money(i.total)}</div></div>
+      <div class="item-actions">
+        <button class="btn-secondary btn-small" onclick="openInvoiceForEdit('${i.id}')">${t('edit_btn')}</button>
+        <button class="btn-secondary btn-small" onclick="printInvoiceFromHistory('${i.id}')">${t('print_btn')}</button>
+      </div>
+    </div>
+  `).join('') : `<div class="empty">${t('inv_history_empty')}</div>`;
+}
+
+loadData();
+restoreBackupFolderHandle();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('service-worker.js').catch(function(){});
+  });
+}
+</script>
+
+</body>
+</html>
