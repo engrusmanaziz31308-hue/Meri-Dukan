@@ -95,6 +95,12 @@
   .btn-row{ display:flex; gap:8px; margin-top:8px; }
   .btn-row button{ flex:1; }
 
+  .invoice-number-row{ display:flex; align-items:center; gap:8px; }
+  .invoice-number-row input{ flex:1; margin-bottom:0; }
+  .invoice-number-row .btn-small{ white-space:nowrap; }
+  .invoice-number-row .btn-small.selected{ border-color:var(--teal); background:#e9f2f0; color:var(--teal-dark); }
+  #inv-number[readonly]{ background:#f2f2f2; color:var(--muted); }
+  .hint{ font-size:12px; color:var(--muted); margin-top:4px; }
   .invoice-item-row{ display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-bottom:8px; flex-wrap:wrap; }
   .invoice-item-row input{ margin-bottom:0; flex:1; min-width:70px; }
   .invoice-item-row .unit-tag{ font-size:12px; color:var(--muted); min-width:36px; }
@@ -210,6 +216,15 @@
       <input id="inv-datetime" type="datetime-local">
     </div>
 
+    <div class="field">
+      <label data-i18n="inv_number_label">انوائس نمبر (اختیاری)</label>
+      <div class="invoice-number-row">
+        <input id="inv-number" data-i18n-ph="inv_number_ph" placeholder="جیسے: 0001">
+        <button type="button" class="btn-secondary btn-small" id="inv-number-auto-btn" onclick="toggleInvoiceNumberAuto()" data-i18n="inv_number_auto_btn">آٹو</button>
+      </div>
+      <div class="hint" id="inv-number-mode-hint" data-i18n="inv_number_manual_hint">نمبر خود لکھیں، یا آٹو دبائیں تاکہ نمبر ترتیب سے خودکار لگے</div>
+    </div>
+
     <div class="section-title" data-i18n="inv_items_title">آئٹمز</div>
     <div style="font-size:12px; color:var(--muted); margin-bottom:8px;" data-i18n="inv_search_hint">ٹائپ کر کے سرچ کریں یا لسٹ سے چنیں</div>
     <div id="invoice-items"></div>
@@ -280,6 +295,13 @@
       <input id="shop-payment-id" data-i18n-ph="shop_payment_ph" placeholder="جیسے: 03001234567 یا اکاؤنٹ نمبر">
     </div>
     <button class="btn-primary" onclick="saveShopInfo()"><span data-i18n="shop_save_btn">دکان کی معلومات محفوظ کریں</span></button>
+
+    <div class="section-title" data-i18n="settings_invoice_number_title">انوائس نمبر کی ترتیب</div>
+    <div class="field">
+      <label data-i18n="settings_next_invoice_no_label">اگلا آٹو انوائس نمبر</label>
+      <input id="settings-next-invoice-no" type="number" min="1" placeholder="1">
+    </div>
+    <button class="btn-secondary" onclick="saveNextInvoiceNo()"><span data-i18n="settings_invoice_number_save_btn">محفوظ کریں</span></button>
 
     <div class="section-title" data-i18n="more_expense_title">خرچہ درج کریں</div>
     <div class="field">
@@ -386,7 +408,7 @@
 <div id="print-area"></div>
 
 <script>
-let db = { products: [], invoices: [], customers: [], expenses: [], settings: { lang: 'ur', shopName:'', businessDescription:'', proprietorName:'', logoDataUrl:'', shopPhone:'', shopAddress:'', paymentId:'' } };
+let db = { products: [], invoices: [], customers: [], expenses: [], settings: { lang: 'ur', shopName:'', businessDescription:'', proprietorName:'', logoDataUrl:'', shopPhone:'', shopAddress:'', paymentId:'', nextInvoiceNo:1, invoiceNumberMode:'manual' } };
 let currentUdhaarCustomerId = null;
 let payMode = 'full';
 let reportRange = 'daily';
@@ -437,6 +459,16 @@ const T = {
 
   inv_datetime_label: { ur:'تاریخ اور وقت', en:'Date & time' },
   inv_editing_notice: { ur:'آپ ایک موجودہ انوائس میں ترمیم کر رہے ہیں', en:'You are editing an existing invoice' },
+  inv_number_label: { ur:'انوائس نمبر (اختیاری)', en:'Invoice number (optional)' },
+  inv_number_ph: { ur:'جیسے: 0001', en:'e.g. 0001' },
+  inv_number_auto_btn: { ur:'آٹو', en:'Auto' },
+  inv_number_manual_hint: { ur:'نمبر خود لکھیں، یا آٹو دبائیں تاکہ نمبر ترتیب سے خودکار لگے', en:'Type the number yourself, or press Auto to fill it in sequence automatically' },
+  inv_number_auto_hint: { ur:'آٹو نمبر لگ رہا ہے — ہر انوائس پر خودکار ترتیب سے بڑھے گا', en:'Auto numbering is on — it will increase in sequence with each invoice' },
+  print_invoice_no_label: { ur:'انوائس نمبر', en:'Invoice #' },
+  settings_invoice_number_title: { ur:'انوائس نمبر کی ترتیب', en:'Invoice number sequence' },
+  settings_next_invoice_no_label: { ur:'اگلا آٹو انوائس نمبر', en:'Next auto invoice number' },
+  settings_invoice_number_save_btn: { ur:'محفوظ کریں', en:'Save' },
+  settings_invoice_number_saved: { ur:'انوائس نمبر کی ترتیب محفوظ ہو گئی', en:'Invoice number sequence saved' },
   inv_cancel_edit_btn: { ur:'ترمیم منسوخ کریں', en:'Cancel edit' },
   inv_update_btn: { ur:'انوائس اپڈیٹ کریں', en:'Update invoice' },
   inv_updated_msg: { ur:'انوائس اپڈیٹ ہو گئی', en:'Invoice updated' },
@@ -610,12 +642,48 @@ function setLang(lang){
   populateShopFields();
   updateInvoiceSaveBtnLabel();
   if(!document.getElementById('inv-datetime').value) setInvoiceDateTimeNow();
+  if(!editingInvoiceId) setInvoiceNumberMode(db.settings.invoiceNumberMode || 'manual');
   saveData();
   render();
 }
 
 function updateInvoiceSaveBtnLabel(){
   document.getElementById('inv-save-btn-label').textContent = editingInvoiceId ? t('inv_update_btn') : t('inv_save_btn');
+}
+
+function padInvoiceNo(n){ return String(n).padStart(4,'0'); }
+
+function toggleInvoiceNumberAuto(){
+  setInvoiceNumberMode(db.settings.invoiceNumberMode === 'auto' ? 'manual' : 'auto');
+}
+
+function setInvoiceNumberMode(mode){
+  db.settings.invoiceNumberMode = mode;
+  const input = document.getElementById('inv-number');
+  const btn = document.getElementById('inv-number-auto-btn');
+  const hint = document.getElementById('inv-number-mode-hint');
+  if(!input || !btn) return;
+  if(mode === 'auto'){
+    btn.classList.add('selected');
+    input.setAttribute('readonly', 'readonly');
+    if(!editingInvoiceId) input.value = padInvoiceNo(db.settings.nextInvoiceNo || 1);
+    if(hint) hint.textContent = t('inv_number_auto_hint');
+  } else {
+    btn.classList.remove('selected');
+    input.removeAttribute('readonly');
+    if(hint) hint.textContent = t('inv_number_manual_hint');
+  }
+  saveData();
+}
+
+function resetInvoiceNumberField(){
+  const input = document.getElementById('inv-number');
+  if(!input) return;
+  if(db.settings.invoiceNumberMode === 'auto'){
+    input.value = padInvoiceNo(db.settings.nextInvoiceNo || 1);
+  } else {
+    input.value = '';
+  }
 }
 
 function toDatetimeLocalValue(d){
@@ -637,7 +705,17 @@ function populateShopFields(){
   document.getElementById('shop-phone').value = db.settings.shopPhone || '';
   document.getElementById('shop-address').value = db.settings.shopAddress || '';
   document.getElementById('shop-payment-id').value = db.settings.paymentId || '';
+  const nextInvEl = document.getElementById('settings-next-invoice-no');
+  if(nextInvEl) nextInvEl.value = db.settings.nextInvoiceNo || 1;
   showShopLogoPreview();
+}
+
+function saveNextInvoiceNo(){
+  const val = parseInt(document.getElementById('settings-next-invoice-no').value, 10);
+  db.settings.nextInvoiceNo = (val && val > 0) ? val : 1;
+  if(db.settings.invoiceNumberMode === 'auto' && !editingInvoiceId) resetInvoiceNumberField();
+  saveData();
+  alert(t('settings_invoice_number_saved'));
 }
 
 function saveShopInfo(){
@@ -705,9 +783,9 @@ async function loadData(){
     const raw = localStorage.getItem('dukaan-db');
     if(raw){
       const loaded = JSON.parse(raw);
-      db = Object.assign({ products:[], invoices:[], customers:[], expenses:[], settings:{lang:'ur', shopName:'', businessDescription:'', proprietorName:'', logoDataUrl:'', shopPhone:'', shopAddress:'', paymentId:''} }, loaded);
-      if(!db.settings) db.settings = { lang:'ur', shopName:'', businessDescription:'', proprietorName:'', logoDataUrl:'', shopPhone:'', shopAddress:'', paymentId:'' };
-      db.settings = Object.assign({ shopName:'', businessDescription:'', proprietorName:'', logoDataUrl:'', shopPhone:'', shopAddress:'', paymentId:'' }, db.settings);
+      db = Object.assign({ products:[], invoices:[], customers:[], expenses:[], settings:{lang:'ur', shopName:'', businessDescription:'', proprietorName:'', logoDataUrl:'', shopPhone:'', shopAddress:'', paymentId:'', nextInvoiceNo:1, invoiceNumberMode:'manual'} }, loaded);
+      if(!db.settings) db.settings = { lang:'ur', shopName:'', businessDescription:'', proprietorName:'', logoDataUrl:'', shopPhone:'', shopAddress:'', paymentId:'', nextInvoiceNo:1, invoiceNumberMode:'manual' };
+      db.settings = Object.assign({ shopName:'', businessDescription:'', proprietorName:'', logoDataUrl:'', shopPhone:'', shopAddress:'', paymentId:'', nextInvoiceNo:1, invoiceNumberMode:'manual' }, db.settings);
       if(!db.expenses) db.expenses = [];
     }
   }catch(e){ /* no data yet */ }
@@ -996,6 +1074,9 @@ function saveInvoice(){
   const dtVal = document.getElementById('inv-datetime').value;
   const dateISO = dtVal ? new Date(dtVal).toISOString() : new Date().toISOString();
 
+  const invoiceNo = document.getElementById('inv-number').value.trim();
+  const usedAutoNumber = db.settings.invoiceNumberMode === 'auto' && !editingInvoiceId;
+
   let oldInv = null;
   if(editingInvoiceId){
     oldInv = db.invoices.find(i=>i.id===editingInvoiceId);
@@ -1036,15 +1117,18 @@ function saveInvoice(){
   if(oldInv){
     invoiceId = oldInv.id;
     Object.assign(oldInv, {
-      date: dateISO, items, total, paid, status,
+      date: dateISO, items, total, paid, status, invoiceNo: invoiceNo || null,
       customerId, customerName: custName || null, customerPhone: custPhone || null
     });
   } else {
     invoiceId = uid();
     db.invoices.push({
-      id: invoiceId, date: dateISO, items, total, paid, status,
+      id: invoiceId, date: dateISO, items, total, paid, status, invoiceNo: invoiceNo || null,
       customerId, customerName: custName || null, customerPhone: custPhone || null
     });
+  }
+  if(usedAutoNumber && invoiceNo){
+    db.settings.nextInvoiceNo = (db.settings.nextInvoiceNo || 1) + 1;
   }
   lastInvoiceId = invoiceId;
   const wasEditing = !!editingInvoiceId;
@@ -1059,6 +1143,7 @@ function saveInvoice(){
   setPayMode('full');
   addInvoiceItemRow();
   setInvoiceDateTimeNow();
+  setInvoiceNumberMode(db.settings.invoiceNumberMode);
   updateInvoiceSaveBtnLabel();
   document.getElementById('cancel-edit-btn').style.display = 'none';
   document.getElementById('edit-invoice-notice').style.display = 'none';
@@ -1079,6 +1164,9 @@ function openInvoiceForEdit(invoiceId){
   document.getElementById('inv-customer-name').value = inv.customerName || '';
   document.getElementById('inv-customer-phone').value = inv.customerPhone || '';
   document.getElementById('inv-datetime').value = toDatetimeLocalValue(new Date(inv.date));
+  document.getElementById('inv-number').value = inv.invoiceNo || '';
+  document.getElementById('inv-number').removeAttribute('readonly');
+  document.getElementById('inv-number-auto-btn').classList.remove('selected');
 
   document.getElementById('invoice-items').innerHTML = '';
   inv.items.forEach(it=>{
@@ -1113,6 +1201,7 @@ function cancelEditInvoice(){
   setPayMode('full');
   addInvoiceItemRow();
   setInvoiceDateTimeNow();
+  setInvoiceNumberMode(db.settings.invoiceNumberMode);
   updateInvoiceSaveBtnLabel();
   document.getElementById('cancel-edit-btn').style.display = 'none';
   document.getElementById('edit-invoice-notice').style.display = 'none';
@@ -1126,7 +1215,7 @@ function showReceiptModal(invoiceId, balanceDue){
       <div class="right"><div class="name">${money(it.price*it.qty)}</div></div>
     </div>
   `).join('');
-  const summary = lines + `
+  const summary = (inv.invoiceNo ? `<div class="item-row"><div class="name">${t('print_invoice_no_label')}</div><div class="right">${inv.invoiceNo}</div></div>` : '') + lines + `
     <div class="item-row"><div class="name">${t('inv_total_label')}</div><div class="right name">${money(inv.total)}</div></div>
     <div class="item-row"><div class="name">${t('print_paid_label')}</div><div class="right">${money(inv.paid)}</div></div>
     ${balanceDue>0 ? `<div class="item-row"><div class="name low-stock">${t('print_balance_label')}</div><div class="right low-stock">${money(balanceDue)}</div></div>` : ''}
@@ -1157,6 +1246,7 @@ function buildPrintHTML(invoiceId){
       ${db.settings.shopAddress ? `<div>${db.settings.shopAddress}</div>` : ''}
       <div class="pr-tagline">${t('print_tagline')}</div>
       <div style="margin-top:6px;">${t('print_invoice_title')}</div>
+      ${inv.invoiceNo ? `<div>${t('print_invoice_no_label')}: ${inv.invoiceNo}</div>` : ''}
       <div>${t('print_date_label')}: ${new Date(inv.date).toLocaleString('en-PK')}</div>
       ${inv.customerName ? `<div>${t('print_customer_label')}: ${inv.customerName} ${inv.customerPhone?('- '+inv.customerPhone):''}</div>` : ''}
     </div>
@@ -1419,8 +1509,8 @@ function importBackup(event){
       const data = JSON.parse(e.target.result);
       if(!data.products || !data.invoices){ alert(t('backup_import_invalid')); return; }
       if(!confirm(t('backup_import_confirm'))) return;
-      db = Object.assign({ products:[], invoices:[], customers:[], expenses:[], settings:{lang:'ur', shopName:'', businessDescription:'', proprietorName:'', logoDataUrl:'', shopPhone:'', shopAddress:'', paymentId:''} }, data);
-      db.settings = Object.assign({ shopName:'', businessDescription:'', proprietorName:'', logoDataUrl:'', shopPhone:'', shopAddress:'', paymentId:'' }, db.settings);
+      db = Object.assign({ products:[], invoices:[], customers:[], expenses:[], settings:{lang:'ur', shopName:'', businessDescription:'', proprietorName:'', logoDataUrl:'', shopPhone:'', shopAddress:'', paymentId:'', nextInvoiceNo:1, invoiceNumberMode:'manual'} }, data);
+      db.settings = Object.assign({ shopName:'', businessDescription:'', proprietorName:'', logoDataUrl:'', shopPhone:'', shopAddress:'', paymentId:'', nextInvoiceNo:1, invoiceNumberMode:'manual' }, db.settings);
       saveData();
       setLang(db.settings.lang || 'ur');
       alert(t('backup_import_done'));
@@ -1486,7 +1576,7 @@ function render(){
   const recentInvoices = db.invoices.slice(-10).reverse();
   document.getElementById('invoice-history-list').innerHTML = recentInvoices.length ? recentInvoices.map(i=>`
     <div class="item-row">
-      <div><div class="name">${i.customerName || '-'}</div><div class="sub">${new Date(i.date).toLocaleString(lang)} &middot; ${money(i.total)}</div></div>
+      <div><div class="name">${i.invoiceNo ? '#'+i.invoiceNo+' — ' : ''}${i.customerName || '-'}</div><div class="sub">${new Date(i.date).toLocaleString(lang)} &middot; ${money(i.total)}</div></div>
       <div class="item-actions">
         <button class="btn-secondary btn-small" onclick="openInvoiceForEdit('${i.id}')">${t('edit_btn')}</button>
         <button class="btn-secondary btn-small" onclick="printInvoiceFromHistory('${i.id}')">${t('print_btn')}</button>
