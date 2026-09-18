@@ -13,6 +13,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
   :root{
     --ink:#16241f;
@@ -152,6 +153,13 @@
   .pr-table th, .pr-table td{ border-bottom:2px solid #000; padding:6px 4px; text-align:start; }
   .pr-total-line{ display:flex; justify-content:space-between; font-size:14px; padding:4px 0; }
   .pr-total-line.grand{ font-weight:700; font-size:16px; border-top:2.5px solid #000; margin-top:6px; padding-top:8px; }
+
+  #scanner-reader{ width:100%; border-radius:8px; overflow:hidden; background:#000; min-height:220px; }
+  #scanner-reader video{ width:100% !important; border-radius:8px; }
+  .barcode-row{ display:flex; align-items:center; gap:8px; }
+  .barcode-row input{ flex:1; margin-bottom:0; }
+  .barcode-row .btn-small{ white-space:nowrap; }
+  .item-scan-btn{ flex:0 0 auto; padding:10px 12px; }
 </style>
 </head>
 <body class="lang-ur">
@@ -354,6 +362,13 @@
       <input id="p-name" data-i18n-ph="p_name_ph" placeholder="جیسے: لیز چپس">
     </div>
     <div class="field">
+      <label data-i18n="p_barcode_label">بار کوڈ (اختیاری)</label>
+      <div class="barcode-row">
+        <input id="p-barcode" data-i18n-ph="p_barcode_ph" placeholder="بار کوڈ نمبر">
+        <button type="button" class="btn-secondary btn-small" onclick="openScannerModal('product')"><span data-i18n="scan_btn">📷 اسکین</span></button>
+      </div>
+    </div>
+    <div class="field">
       <label data-i18n="p_unit_label">یونٹ</label>
       <select id="p-unit">
         <option value="piece" data-i18n="unit_piece">عدد (Piece)</option>
@@ -389,6 +404,16 @@
       <input id="udhaar-payment-amount" type="number" placeholder="0">
     </div>
     <button class="btn-primary" onclick="recordUdhaarPayment()"><span data-i18n="udhaar_payment_btn">ادائیگی درج کریں</span></button>
+  </div>
+</div>
+
+<!-- Barcode scanner modal -->
+<div class="modal-bg" id="scanner-modal">
+  <div class="modal">
+    <div class="close-row"><span onclick="closeScannerModal()">&#10005; <span data-i18n="close_label">بند کریں</span></span></div>
+    <h3 data-i18n="scan_modal_title">بار کوڈ اسکین کریں</h3>
+    <div id="scanner-reader"></div>
+    <div class="hint" id="scanner-hint"></div>
   </div>
 </div>
 
@@ -495,6 +520,13 @@ const T = {
   p_edit_title: { ur:'پروڈکٹ میں تبدیلی کریں', en:'Edit product' },
   p_name_label: { ur:'پروڈکٹ کا نام', en:'Product name' },
   p_name_ph: { ur:'جیسے: لیز چپس', en:'e.g. Lays chips' },
+  p_barcode_label: { ur:'بار کوڈ (اختیاری)', en:'Barcode (optional)' },
+  p_barcode_ph: { ur:'بار کوڈ نمبر', en:'Barcode number' },
+  p_barcode_duplicate_alert: { ur:'یہ بار کوڈ پہلے سے ایک اور پروڈکٹ پر لگا ہے', en:'This barcode is already used by another product' },
+  scan_btn: { ur:'📷 اسکین', en:'📷 Scan' },
+  scan_modal_title: { ur:'بار کوڈ اسکین کریں', en:'Scan barcode' },
+  scan_camera_error: { ur:'کیمرہ کھل نہیں سکا۔ کیمرے کی اجازت چیک کریں۔', en:'Could not open camera. Check camera permission.' },
+  scan_no_match_alert: { ur:'یہ بار کوڈ کسی پروڈکٹ سے میچ نہیں ہوا۔ پہلے پروڈکٹ میں یہ بار کوڈ محفوظ کریں۔', en:'This barcode did not match any product. Save this barcode on a product first.' },
   p_unit_label: { ur:'یونٹ', en:'Unit' },
   p_cost_label: { ur:'خریداری قیمت (فی یونٹ)', en:'Cost price (per unit)' },
   p_price_label: { ur:'فروخت قیمت (فی یونٹ)', en:'Sale price (per unit)' },
@@ -921,6 +953,7 @@ function openProductModal(editId){
   if(editId){
     const p = db.products.find(x=>x.id===editId);
     document.getElementById('p-name').value = p.name;
+    document.getElementById('p-barcode').value = p.barcode || '';
     document.getElementById('p-unit').value = p.unit;
     document.getElementById('p-cost').value = p.cost;
     document.getElementById('p-price').value = p.price;
@@ -929,6 +962,7 @@ function openProductModal(editId){
     document.getElementById('product-modal-title').textContent = t('p_edit_title');
   }else{
     document.getElementById('p-name').value='';
+    document.getElementById('p-barcode').value='';
     document.getElementById('p-unit').value='piece';
     document.getElementById('p-cost').value='';
     document.getElementById('p-price').value='';
@@ -943,17 +977,21 @@ function closeProductModal(){ document.getElementById('product-modal').classList
 function saveProduct(){
   const id = document.getElementById('p-id').value;
   const name = document.getElementById('p-name').value.trim();
+  const barcode = document.getElementById('p-barcode').value.trim();
   const unit = document.getElementById('p-unit').value;
   const cost = parseFloat(document.getElementById('p-cost').value) || 0;
   const price = parseFloat(document.getElementById('p-price').value) || 0;
   const qty = parseFloat(document.getElementById('p-qty').value) || 0;
   const lowAlert = parseFloat(document.getElementById('p-lowalert').value) || 5;
   if(!name){ alert(t('p_name_required')); return; }
+  if(barcode && db.products.some(x=>x.barcode===barcode && x.id!==id)){
+    alert(t('p_barcode_duplicate_alert')); return;
+  }
   if(id){
     const p = db.products.find(x=>x.id===id);
-    Object.assign(p, { name, unit, cost, price, qty, lowAlert });
+    Object.assign(p, { name, barcode, unit, cost, price, qty, lowAlert });
   }else{
-    db.products.push({ id: uid(), name, unit, cost, price, qty, lowAlert });
+    db.products.push({ id: uid(), name, barcode, unit, cost, price, qty, lowAlert });
   }
   saveData();
   closeProductModal();
@@ -967,11 +1005,61 @@ function deleteProduct(id){
   render();
 }
 
+let html5QrCode = null;
+let scannerContext = null;
+
+function openScannerModal(mode, btnEl){
+  scannerContext = mode==='invoice' ? { mode:'invoice', row: btnEl.closest('.invoice-item-row') } : { mode:'product' };
+  document.getElementById('scanner-hint').textContent = '';
+  document.getElementById('scanner-modal').classList.add('show');
+  html5QrCode = new Html5Qrcode('scanner-reader');
+  html5QrCode.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 250, height: 150 } },
+    onBarcodeScanned,
+    function(){ /* ignore per-frame scan misses */ }
+  ).catch(function(){
+    document.getElementById('scanner-hint').textContent = t('scan_camera_error');
+  });
+}
+
+function closeScannerModal(){
+  document.getElementById('scanner-modal').classList.remove('show');
+  if(html5QrCode){
+    const instance = html5QrCode;
+    html5QrCode = null;
+    instance.stop().then(()=>instance.clear()).catch(()=>{});
+  }
+  scannerContext = null;
+}
+
+function onBarcodeScanned(decodedText){
+  if(!scannerContext) return;
+  const ctx = scannerContext;
+  if(ctx.mode==='product'){
+    closeScannerModal();
+    document.getElementById('p-barcode').value = decodedText;
+  }else if(ctx.mode==='invoice'){
+    const prod = db.products.find(p=>p.barcode && p.barcode===decodedText);
+    closeScannerModal();
+    if(prod){
+      const row = ctx.row;
+      row.querySelector('.product-search').value = prod.name;
+      row.querySelector('.product-id').value = prod.id;
+      row.querySelector('.unit-tag').textContent = unitLabel(prod.unit);
+      calcInvoiceTotal();
+    }else{
+      alert(t('scan_no_match_alert'));
+    }
+  }
+}
+
 function addInvoiceItemRow(){
   const wrap = document.getElementById('invoice-items');
   const row = document.createElement('div');
   row.className = 'invoice-item-row';
   row.innerHTML = `
+    <button type="button" class="btn-secondary btn-small item-scan-btn" onclick="openScannerModal('invoice', this)" title="${t('scan_btn')}">&#128247;</button>
     <div class="combo-wrap">
       <input type="text" class="product-search" placeholder="${t('inv_select_product')}"
         oninput="onProductSearchInput(this)" onfocus="filterProductSuggestions(this)" onblur="hideSuggestionsDelayed(this)">
@@ -989,7 +1077,7 @@ function addInvoiceItemRow(){
 function filterProductSuggestions(input){
   const row = input.closest('.invoice-item-row');
   const query = input.value.trim().toLowerCase();
-  const list = query ? db.products.filter(p=>p.name.toLowerCase().includes(query)) : db.products;
+  const list = query ? db.products.filter(p=>p.name.toLowerCase().includes(query) || (p.barcode && p.barcode.toLowerCase().includes(query))) : db.products;
   const box = row.querySelector('.sugg-box');
   box.innerHTML = list.length ? list.map(p=>`
     <div class="sugg-item" onmousedown="selectProductSuggestion(this,'${p.id}')">${p.name} — ${money(p.price)}/${unitLabel(p.unit)}</div>
